@@ -29,7 +29,8 @@ CustomRaces.Enable = 1
 #                     Goblin - Horde, base race Orc.
 #                     A race left out here is refused by the server; the race choice of the client still shows it
 #                     until its client patch is built again.
-#        Default:     "Goblin"
+#                     None is chosen by default: each realm picks its own.
+#        Default:     ""
 #
 
-CustomRaces.Races = "Goblin"
+CustomRaces.Races = ""

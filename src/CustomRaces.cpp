@@ -108,7 +108,7 @@ namespace
         std::vector<RaceDef const*> races;
         if (!sConfigMgr->GetOption<bool>("CustomRaces.Enable", true))
             return races;
-        std::string list = sConfigMgr->GetOption<std::string>("CustomRaces.Races", "Goblin");
+        std::string list = sConfigMgr->GetOption<std::string>("CustomRaces.Races", "");
         std::replace(list.begin(), list.end(), ',', ' ');
         for (std::string_view token : Acore::Tokenize(list, ' ', false))
         {

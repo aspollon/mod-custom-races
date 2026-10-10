@@ -43,7 +43,7 @@ and their side from the core's race table.
 | Option | Default | |
 |---|---|---|
 | `CustomRaces.Enable` | 1 | The races of `CustomRaces.Races` can be created and played. |
-| `CustomRaces.Races` | `Goblin` | The races that are playable, by name. |
+| `CustomRaces.Races` | (none) | The races that are playable, by name. None is chosen by default: each realm picks its own. |
 
 ## Install
 
