@@ -63,7 +63,9 @@ player needs the client patch (*Export as ZIP* gives it to the others).
      template 2, exploration sound 4141, language 1, side 1,
    - `DBFilesClient\CharBaseInfo.dbc` of your client with a row for the Goblin and each class of the Orc (two bytes a
      row: race, class). The character creation takes at most 30 classes per race,
-   - `DBFilesClient\CharStartOutfit.dbc` of your client with the outfits of the Orc for the Goblin.
+   - `DBFilesClient\CharStartOutfit.dbc` of your client with the outfits of the Orc for the Goblin,
+   - `DBFilesClient\CharacterCreationClassDetails.dbc` of your client with the rows of the Orc for the Goblin: the
+     weapons and armour the character creation shows for the classes of CoA (fields: id, class, race, sex, ...).
 
 ## Status
 

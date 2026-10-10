@@ -41,6 +41,14 @@
           }
         },
         {
+          "file": "DBFilesClient\\CharacterCreationClassDetails.dbc",
+          "cloneRows": {
+            "match": { "8": 2 },
+            "set": { "8": 9 },
+            "key": [4, 8, 12]
+          }
+        },
+        {
           "file": "DBFilesClient\\CharStartOutfit.dbc",
           "cloneRows": {
             "match": { "4": 2 },
@@ -51,6 +59,6 @@
         }
       ]
     },
-    "why": "The race choice of the character creation shows the Goblin with the Horde: the game client already carries its model, skins and hair, and the patch makes it playable for the classes of the Orc, in the outfits of the Orc."
+    "why": "The race choice of the character creation shows the Goblin with the Horde: the game client already carries its model, skins and hair, and the patch makes it playable for the classes of the Orc, in the outfits of the Orc, with the weapons and armour the character creation shows for the classes of Conquest of Azeroth."
   }
 }
