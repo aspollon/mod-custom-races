@@ -32,6 +32,11 @@
 #include <string>
 #include <vector>
 
+// In DBCStores.cpp, added by patches/core-custom-races.patch: a new race starts in the outfits of its base race and
+// may have the skills that race may have. Declared here rather than in DBCStores.h, which nearly every file of the
+// core includes - a header the patch changed would make every build of the server compile almost all of it again.
+void SetRaceBase(uint8 race, uint8 base);
+
 namespace
 {
     /// What a new race takes over from the stock race it leans on: the values of that race's row in ChrRaces.dbc.

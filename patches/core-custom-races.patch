@@ -1,5 +1,5 @@
 diff --git a/src/server/coa/AscensionCompat.cpp b/src/server/coa/AscensionCompat.cpp
-index b0355b7..3a1113f 100644
+index 839fe9c6..51b22e8c 100644
 --- a/src/server/coa/AscensionCompat.cpp
 +++ b/src/server/coa/AscensionCompat.cpp
 @@ -651,7 +651,7 @@ std::vector<uint32> GetAscensionRacialSpells(Player const* player)
@@ -12,7 +12,7 @@ index b0355b7..3a1113f 100644
                  if (AscensionRacialAbilities::CanLearn(*ability, player->getRace(), player->getClass()))
                      spells.push_back(ability->Spell);
 diff --git a/src/server/coa/AscensionRacialAbilities.h b/src/server/coa/AscensionRacialAbilities.h
-index a59ccc5..62a8fbc 100644
+index a59ccc5d..62a8fbc3 100644
 --- a/src/server/coa/AscensionRacialAbilities.h
 +++ b/src/server/coa/AscensionRacialAbilities.h
 @@ -87,6 +87,14 @@ inline constexpr std::array<RacialSkill, 12> Skills =
@@ -39,7 +39,7 @@ index a59ccc5..62a8fbc 100644
          return false;
  
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index 98db847..b1a9520 100644
+index 98db8476..86132ad2 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
 @@ -25,6 +25,7 @@
@@ -50,10 +50,15 @@ index 98db847..b1a9520 100644
  #include "TransportMgr.h"
  #include "World.h"
  #include <algorithm>
-@@ -936,8 +937,18 @@ uint32 GetLiquidFlags(uint32 liquidType)
+@@ -936,8 +937,23 @@ uint32 GetLiquidFlags(uint32 liquidType)
      return 0;
  }
  
++// mod-custom-races: a race a module made playable leans on a stock race (0: on none) - it starts in that race's
++// outfits and may have the skills that race may have. Declared by the module itself, so that no header changes and
++// the build stays short.
++void SetRaceBase(uint8 race, uint8 base);
++
 +static std::array<uint8, 32> sRaceBase = {};
 +
 +void SetRaceBase(uint8 race, uint8 base)
@@ -69,7 +74,7 @@ index 98db847..b1a9520 100644
      std::map<uint32, CharStartOutfitEntry const*>::const_iterator itr = sCharStartOutfitMap.find(race | (class_ << 8) | (gender << 16));
      if (itr == sCharStartOutfitMap.end())
          return nullptr;
-@@ -1003,6 +1014,8 @@ uint32 GetDefaultMapLight(uint32 mapId)
+@@ -1003,6 +1019,8 @@ uint32 GetDefaultMapLight(uint32 mapId)
  
  SkillRaceClassInfoEntry const* GetSkillRaceClassInfo(uint32 skill, uint8 race, uint8 class_)
  {
@@ -78,17 +83,3 @@ index 98db847..b1a9520 100644
      SkillRaceClassInfoBounds bounds = SkillRaceClassInfoBySkill.equal_range(skill);
      for (SkillRaceClassInfoMap::iterator itr = bounds.first; itr != bounds.second; ++itr)
      {
-diff --git a/src/server/game/DataStores/DBCStores.h b/src/server/game/DataStores/DBCStores.h
-index c6cc788..fcda73d 100644
---- a/src/server/game/DataStores/DBCStores.h
-+++ b/src/server/game/DataStores/DBCStores.h
-@@ -75,6 +75,9 @@ PvPDifficultyEntry const* GetBattlegroundBracketByLevel(uint32 mapid, uint32 lev
- PvPDifficultyEntry const* GetBattlegroundBracketById(uint32 mapid, BattlegroundBracketId id);
- 
- CharStartOutfitEntry const* GetCharStartOutfitEntry(uint8 race, uint8 class_, uint8 gender);
-+// A race a module made playable leans on a stock race (0: on none): it starts in that race's outfits and may have
-+// the skills that race may have.
-+void SetRaceBase(uint8 race, uint8 base);
- 
- CharSectionsEntry const* GetCharSectionEntry(uint8 race, CharSectionType genType, uint8 gender, uint8 type, uint8 color);
- 
