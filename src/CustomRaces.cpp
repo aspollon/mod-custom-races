@@ -47,20 +47,21 @@ namespace
         uint32 Language;
         uint32 Alliance;                                 // 0 Alliance, 1 Horde
         uint32 ExplorationSound;
+        char const* Name;
     };
 
     BaseRace const BASES[] =
     {
-        { 1, 1, 7, 0, 4140 },       // Human
-        { 2, 2, 1, 1, 4141 },       // Orc
-        { 3, 3, 7, 0, 4147 },       // Dwarf
-        { 4, 4, 7, 0, 4145 },       // Night Elf
-        { 5, 5, 1, 1, 4142 },       // Undead
-        { 6, 6, 1, 1, 4143 },       // Tauren
-        { 7, 115, 7, 0, 4146 },     // Gnome
-        { 8, 116, 1, 1, 4144 },     // Troll
-        { 10, 1610, 1, 1, 4142 },   // Blood Elf
-        { 11, 1629, 7, 0, 4140 },   // Draenei
+        { 1, 1, 7, 0, 4140, "Human" },
+        { 2, 2, 1, 1, 4141, "Orc" },
+        { 3, 3, 7, 0, 4147, "Dwarf" },
+        { 4, 4, 7, 0, 4145, "NightElf" },
+        { 5, 5, 1, 1, 4142, "Undead" },
+        { 6, 6, 1, 1, 4143, "Tauren" },
+        { 7, 115, 7, 0, 4146, "Gnome" },
+        { 8, 116, 1, 1, 4144, "Troll" },
+        { 10, 1610, 1, 1, 4142, "BloodElf" },
+        { 11, 1629, 7, 0, 4140, "Draenei" },
     };
 
     /// A race of the client that the module can make playable. Its id is the one of its row in ChrRaces.dbc of the
@@ -126,6 +127,25 @@ namespace
     }
 
     std::vector<RaceDef const*> active;
+    uint8 baseOf[32] = {};
+
+    /// The stock race a new race leans on: CustomRaces.<race>.Base, by name, or the race's own default. It decides
+    /// the faction, the start, the quests and the racial abilities of the race.
+    uint8 ChooseBase(RaceDef const& race)
+    {
+        std::string const wanted = Lower(sConfigMgr->GetOption<std::string>(std::string("CustomRaces.") + race.Key + ".Base", ""));
+        if (wanted.empty())
+            return race.Base;
+        for (BaseRace const& base : BASES)
+            if (Lower(base.Name) == wanted || (wanted == "night elf" && base.Id == 4) || (wanted == "blood elf" && base.Id == 10) ||
+                (wanted == "scourge" && base.Id == 5))
+                return base.Id;
+        LOG_WARN("module", "mod-custom-races: CustomRaces.{}.Base names \"{}\", which is not a stock race; {} keeps its default", race.Key,
+            wanted, race.Name);
+        return race.Base;
+    }
+
+    uint8 BaseFor(RaceDef const& race) { return race.Id < 32 && baseOf[race.Id] ? baseOf[race.Id] : race.Base; }
 
     bool IsWanted(std::vector<RaceDef const*> const& wanted, RaceDef const& race)
     {
@@ -149,8 +169,8 @@ namespace
         if (!on)
             return;
 
-        BaseRace const* base = FindBase(race.Base);
-        uint32 const baseBit = Bit(race.Base);
+        BaseRace const* base = FindBase(BaseFor(race));
+        uint32 const baseBit = Bit(BaseFor(race));
         std::string names;
         std::string values;
         for (char const* locale : { "enUS", "enGB", "koKR", "frFR", "deDE", "enCN", "zhCN", "enTW", "zhTW", "esES", "esMX", "ruRU",
@@ -168,14 +188,14 @@ namespace
             base->Language, CREATURE_TYPE_HUMANOID_ID, RESURRECTION_SICKNESS, SPLASH_SOUND, base->Alliance, values);
         WorldDatabase.DirectExecute("INSERT INTO `playercreateinfo` (`race`, `class`, `map`, `zone`, `position_x`, `position_y`, "
             "`position_z`, `orientation`) SELECT {}, `class`, `map`, `zone`, `position_x`, `position_y`, `position_z`, `orientation` "
-            "FROM `playercreateinfo` WHERE `race` = {}", race.Id, race.Base);
+            "FROM `playercreateinfo` WHERE `race` = {}", race.Id, BaseFor(race));
         WorldDatabase.DirectExecute("INSERT INTO `playercreateinfo_action` (`race`, `class`, `button`, `action`, `type`) "
-            "SELECT {}, `class`, `button`, `action`, `type` FROM `playercreateinfo_action` WHERE `race` = {}", race.Id, race.Base);
+            "SELECT {}, `class`, `button`, `action`, `type` FROM `playercreateinfo_action` WHERE `race` = {}", race.Id, BaseFor(race));
         WorldDatabase.DirectExecute("INSERT INTO `playercreateinfo_item` (`race`, `class`, `itemid`, `amount`, `Note`) "
-            "SELECT {}, `class`, `itemid`, `amount`, `Note` FROM `playercreateinfo_item` WHERE `race` = {}", race.Id, race.Base);
+            "SELECT {}, `class`, `itemid`, `amount`, `Note` FROM `playercreateinfo_item` WHERE `race` = {}", race.Id, BaseFor(race));
         WorldDatabase.DirectExecute("INSERT INTO `player_race_stats` (`Race`, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit`) "
             "SELECT {}, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit` FROM `player_race_stats` WHERE `Race` = {}",
-            race.Id, race.Base);
+            race.Id, BaseFor(race));
         WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_skills` (`raceMask`, `classMask`, `skill`, `rank`, `comment`) "
             "SELECT {}, `classMask`, `skill`, `rank`, `comment` FROM `playercreateinfo_skills` WHERE `raceMask` <> 0 AND "
             "(`raceMask` & {}) <> 0", bit, baseBit);
@@ -183,7 +203,7 @@ namespace
             "SELECT {}, `classmask`, `Spell`, `Note` FROM `playercreateinfo_spell_custom` WHERE `racemask` <> 0 AND "
             "(`racemask` & {}) <> 0", bit, baseBit);
         WorldDatabase.DirectExecute("INSERT IGNORE INTO `ascension_custom_class_race` (`class`, `race`) "
-            "SELECT `class`, {} FROM `ascension_custom_class_race` WHERE `race` = {}", race.Id, race.Base);
+            "SELECT `class`, {} FROM `ascension_custom_class_race` WHERE `race` = {}", race.Id, BaseFor(race));
     }
 
     // ---------------------------------------------------------------------------------- the characters
@@ -215,9 +235,9 @@ namespace
             return;
         CharacterDatabase.DirectExecute("REPLACE INTO `custom_races_moved` (`guid`, `race`, `base`, `skin`, `face`, `hairStyle`, `hairColor`, "
             "`facialStyle`) SELECT `guid`, `race`, {}, `skin`, `face`, `hairStyle`, `hairColor`, `facialStyle` FROM `characters` "
-            "WHERE `race` = {}", race.Base, race.Id);
+            "WHERE `race` = {}", BaseFor(race), race.Id);
         CharacterDatabase.DirectExecute("UPDATE `characters` SET `race` = {}, `skin` = 0, `face` = 0, `hairStyle` = 0, `hairColor` = 0, "
-            "`facialStyle` = 0 WHERE `race` = {}", race.Base, race.Id);
+            "`facialStyle` = 0 WHERE `race` = {}", BaseFor(race), race.Id);
         LOG_INFO("module", "mod-custom-races: {} is off; {} character(s) of it play their base race until it is on again",
             race.Name, (*count)[0].Get<uint64>());
     }
@@ -242,7 +262,7 @@ namespace
     void LendMasks(RaceDef const& race)
     {
         uint32 const bit = Bit(race.Id);
-        uint32 const baseBit = Bit(race.Base);
+        uint32 const baseBit = Bit(BaseFor(race));
         uint32 quests = 0, items = 0, factions = 0, skills = 0;
 
         for (auto const& [id, quest] : sObjectMgr->GetQuestTemplates())
@@ -277,7 +297,8 @@ public:
         active.clear();
         for (RaceDef const& race : POOL)
         {
-            bool const on = IsWanted(wanted, race) && FindBase(race.Base);
+            baseOf[race.Id] = ChooseBase(race);
+            bool const on = IsWanted(wanted, race) && FindBase(BaseFor(race));
             WriteRace(race, on);
             MoveCharacters(race, on);
             if (on)
@@ -300,8 +321,8 @@ public:
         }
         for (RaceDef const* race : active)
         {
-            AscensionRacialAbilities::BorrowedRacials[race->Id] = race->Base;
-            SetRaceBase(race->Id, race->Base);
+            AscensionRacialAbilities::BorrowedRacials[race->Id] = BaseFor(*race);
+            SetRaceBase(race->Id, BaseFor(*race));
             LendMasks(*race);
         }
     }

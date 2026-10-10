@@ -15,7 +15,7 @@ Each new race leans on a stock race of its faction, its **base race**:
 
 | Race | Faction | Base race | Classes |
 |---|---|---|---|
-| Goblin | Horde | Orc | those of the Orc: the classes of CoA, and the classic classes with mod-classic-classes |
+| Goblin | Horde | Orc (any stock race, `CustomRaces.Goblin.Base`) | those of the Orc: the classes of CoA, and the classic classes with mod-classic-classes |
 
 - **Start**: where its base race starts, with its first items and action bars.
 - **Stats and racial abilities**: those of its base race, and the racial abilities of CoA its base race gets.
@@ -44,6 +44,7 @@ and their side from the core's race table.
 |---|---|---|
 | `CustomRaces.Enable` | 1 | The races of `CustomRaces.Races` can be created and played. |
 | `CustomRaces.Races` | (none) | The races that are playable, by name. None is chosen by default: each realm picks its own. |
+| `CustomRaces.Goblin.Base` | `Orc` | The stock race the Goblin leans on: where it starts, its quests, stats, racial abilities and faction. |
 
 ## Install
 

@@ -34,3 +34,15 @@ CustomRaces.Enable = 1
 #
 
 CustomRaces.Races = ""
+
+#
+#    CustomRaces.Goblin.Base
+#        Description: The stock race the Goblin leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
+#                     Gnome, Troll, BloodElf or Draenei. A Goblin starts where a new character of that race starts,
+#                     gets its quests, its stats and its racial abilities, and plays for its faction.
+#                     Goblins made before keep their place in the world; changed to a race of the other faction,
+#                     they would change sides with it, so pick the base race before players make Goblins.
+#        Default:     "Orc"
+#
+
+CustomRaces.Goblin.Base = "Orc"
