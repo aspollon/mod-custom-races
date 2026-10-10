@@ -5,11 +5,12 @@
 -- their icon, their text and the racial abilities of their base race.
 
 -- The new races, by the file name of their row in ChrRaces.dbc. male, female: where the race's portraits sit on
--- Interface\Glues\CharacterCreate\UI-CharacterCreate-Races (left, right, top, bottom); base: the stock race whose
--- racial abilities it has.
+-- Interface\Glues\CharacterCreate\UI-CHARACTERCREATE-RACESROUND (left, right, top, bottom); base, baseFile: the
+-- stock race whose racial abilities, background scene, light and sound it has.
 local CUSTOM_RACES = {
 	GOBLIN = {
 		base = "ORC",
+		baseFile = "Orc",
 		male = { 0.625, 0.75, 0.25, 0.5 },
 		female = { 0.625, 0.75, 0.75, 1.0 },
 		info = "Goblins are cunning merchants and inventors. They stand with the Horde, which they serve with their " ..
@@ -47,6 +48,34 @@ for file, race in pairs(CUSTOM_RACES) do
 	if CHAR_CREATE_PASSIVES and CHAR_CREATE_PASSIVES[race.base] and not CHAR_CREATE_PASSIVES[file] then
 		CHAR_CREATE_PASSIVES[file] = CHAR_CREATE_PASSIVES[race.base]
 	end
+	-- The scene behind the character: the game has none of its own for these races.
+	for _, list in ipairs({ GlueAmbienceTracks, CharModelFogInfo, RaceLights }) do
+		if type(list) == "table" and list[race.base] ~= nil and list[file] == nil then
+			list[file] = list[race.base]
+		end
+	end
+	local raceFile = file:sub(1, 1) .. file:sub(2):lower()
+	for _, list in ipairs({ CHAR_CREATE_CAMERA_ZOOM_IN, CHAR_CREATE_CAMERA_ZOOM_OUTS }) do
+		if type(list) == "table" and list[race.baseFile] ~= nil and list[raceFile] == nil then
+			list[raceFile] = list[race.baseFile]
+		end
+	end
+end
+
+-- The character creation and selection show the scene of a race from Interface\Glues\Models\UI_<race>; a new race
+-- shows the one of its base race.
+if SetBackgroundModel then
+	local setBackgroundModel = SetBackgroundModel
+	function SetBackgroundModel(model, name)
+		local upper = name and strupper(name) or ""
+		local race, zoom = upper:match("^(.-)(_ZOOM)$")
+		race = race or upper
+		local custom = CUSTOM_RACES[race]
+		if custom then
+			name = custom.base .. (zoom or "")
+		end
+		return setBackgroundModel(model, name)
+	end
 end
 
 -- A button made here has no race yet when it loads.
@@ -61,10 +90,10 @@ function CharCreateRaceButtonMixin:OnLoad()
 end
 
 -- The race buttons show the round portraits of UI-CHARACTERCREATE-RACES_Round, which has none of the new races; a new
--- race shows its square portrait of UI-CharacterCreate-Races instead. A race without a portrait or a text of its own
+-- race shows its round portrait of the older UI-CHARACTERCREATE-RACESROUND instead. A race without a portrait or a text of its own
 -- still gets a button.
 local ROUND = "Interface\\Glues\\CharacterCreate\\UI-CHARACTERCREATE-RACES_Round"
-local SQUARE = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Races"
+local OLDROUND = "Interface\\Glues\\CharacterCreate\\UI-CHARACTERCREATE-RACESROUND"
 local setRace = CharCreateRaceButtonMixin.SetRace
 local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 	local custom = CUSTOM_RACES[raceEnglishName]
@@ -74,7 +103,7 @@ local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 	if not GetFlavorText("RACE_INFO_" .. raceEnglishName, gender) then
 		_G["RACE_INFO_" .. raceEnglishName] = raceName
 	end
-	local file = custom and SQUARE or ROUND
+	local file = custom and OLDROUND or ROUND
 	self:GetNormalTexture():SetTexture(file)
 	self:GetPushedTexture():SetTexture(file)
 	return setRace(self, raceName, raceEnglishName, gender, enabled)
