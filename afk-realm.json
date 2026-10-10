@@ -1,0 +1,56 @@
+{
+  "about": "Read by AFK Realm (https://github.com/aspollon/AFK-Realm) when it builds the server. Without AFK Realm, apply the patch and build the client patch yourself: see README.md.",
+  "patches": [
+    {
+      "name": "New races lean on a stock race",
+      "target": "core",
+      "file": "patches/core-custom-races.patch",
+      "why": "A race this module makes playable starts in the outfits of its base race, may learn the skills that race may learn, and gets the racial abilities of Conquest of Azeroth that race gets."
+    }
+  ],
+  "client": {
+    "clearCache": true,
+    "patch": {
+      "files": [
+        {
+          "from": "client/CustomRaces.lua",
+          "to": "Interface\\GlueXML\\CustomRaces.lua"
+        }
+      ],
+      "edits": [
+        {
+          "file": "Interface\\GlueXML\\GlueXML.toc",
+          "insertAfter": "CharacterCreate.xml",
+          "line": "CustomRaces.lua"
+        },
+        {
+          "file": "DBFilesClient\\ChrRaces.dbc",
+          "setRows": {
+            "match": { "0": 9 },
+            "set": { "1": 12, "2": 2, "3": 4141, "7": 1, "13": 1 }
+          }
+        },
+        {
+          "file": "DBFilesClient\\CharBaseInfo.dbc",
+          "addRows": {
+            "cross": [
+              [9],
+              [1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+            ],
+            "maxPerRace": 30
+          }
+        },
+        {
+          "file": "DBFilesClient\\CharStartOutfit.dbc",
+          "cloneRows": {
+            "match": { "4": 2 },
+            "set": { "4": 9 },
+            "key": [4, 5, 6],
+            "replace": true
+          }
+        }
+      ]
+    },
+    "why": "The race choice of the character creation shows the Goblin with the Horde: the game client already carries its model, skins and hair, and the patch makes it playable for the classes of the Orc, in the outfits of the Orc."
+  }
+}

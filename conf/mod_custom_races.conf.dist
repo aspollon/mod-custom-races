@@ -1,0 +1,35 @@
+#
+# mod-custom-races - more playable races for Conquest of Azeroth.
+#
+# The game client of Conquest of Azeroth carries the models, skins and hair of races no player can choose. This
+# module makes some of them playable. It needs its change to the core (patches/core-custom-races.patch, brought in
+# by AFK Realm) and, in the game client of every player, its client patch, which puts the races on the race choice.
+#
+# Each new race leans on a stock race of its faction, its base race: it starts where that race starts, in its
+# outfits, with its stats and racial abilities, and may do what that race may do (quests, items, reputations).
+#
+# Everything can be taken back: a race switched off (or the module) leaves no rows behind, and its characters play
+# their base race until it is switched on again - then they get their race and looks back.
+#
+[worldserver]
+
+#
+#    CustomRaces.Enable
+#        Description: The races of CustomRaces.Races can be created and played. Needs a restart.
+#                     Off: none of them; their characters play their base race until they are on again.
+#        Default:     1 - Enabled
+#                     0 - Disabled
+#
+
+CustomRaces.Enable = 1
+
+#
+#    CustomRaces.Races
+#        Description: The races that are playable, by name, separated by spaces.
+#                     Goblin - Horde, base race Orc.
+#                     A race left out here is refused by the server; the race choice of the client still shows it
+#                     until its client patch is built again.
+#        Default:     "Goblin"
+#
+
+CustomRaces.Races = "Goblin"
