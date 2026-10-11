@@ -2,11 +2,15 @@
 # mod-custom-races - more playable races for Conquest of Azeroth.
 #
 # The game client of Conquest of Azeroth carries the models, skins and hair of races no player can choose. This
-# module makes some of them playable. It needs its change to the core (patches/core-custom-races.patch, brought in
-# by AFK Realm) and, in the game client of every player, its client patch, which puts the races on the race choice.
+# module makes them playable. It needs its change to the core (patches/core-custom-races.patch, brought in by AFK
+# Realm) and, in the game client of every player, its client patch, which puts the races on the race choice.
 #
-# Each new race leans on a stock race of its faction, its base race: it starts where that race starts, in its
-# outfits, with its stats and racial abilities, and may do what that race may do (quests, items, reputations).
+# Which races there are is not fixed by the module: they are the races of the game client. The setup page of AFK
+# Realm (Modules > Custom races) reads them from the client and writes what the server needs of each into this file
+# (the CustomRaces.<race>.* options below). By hand, take the values from the client's ChrRaces.dbc.
+#
+# Each new race leans on a stock race, its base race: it starts where that race starts, in its outfits, with its
+# stats and racial abilities, plays for its faction and may do what that race may do (quests, items, reputations).
 #
 # Everything can be taken back: a race switched off (or the module) leaves no rows behind, and its characters play
 # their base race until it is switched on again - then they get their race and looks back.
@@ -25,33 +29,8 @@ CustomRaces.Enable = 1
 
 #
 #    CustomRaces.Races
-#        Description: The races that are playable, by name, separated by spaces, for example "Goblin Worgen".
-#                     The races of the module:
-#                     Goblin       shows armour, male and female
-#                     Zandalari    shows armour, male and female
-#                     Worgen       shows armour, male and female
-#                     KulTiran     shows armour, male and female
-#                     Vulpera      shows armour, male and female
-#                     Pandaren     shows armour, male and female
-#                     HighElf      shows armour, male and female
-#                     FelOrc       male only (the game has no female model)
-#                     Broken       male only (the game has no female model)
-#                     Earthen      shows armour, male and female
-#                     Drakkari     shows armour, male and female
-#                     Vrykul       male only (the game has no female model)
-#                     Tuskarr      male only (the game has no female model)
-#                     Taunka       male only (the game has no female model)
-#                     ForestTroll  male only (the game has no female model)
-#                     IceTroll     male only (the game has no female model)
-#                     Skeleton     male only (the game has no female model)
-#                     Naga         shows no armour (its model has no places for it)
-#                     NorthrendSkeleton male only (the game has no female model)
-#                     LeperTroll   not tried yet
-#                     Troglodyte   male only (the game has no female model)
-#                     ThinHuman    male only (the game has no female model)
-#                     HumanCultist not tried yet
-#                     A race left out here is refused by the server; the race choice of the game client shows
-#                     the races its client patch was built for (AFK Realm builds it anew after a change).
+#        Description: The races that are playable, by their key (the English name without spaces), separated by
+#                     spaces, for example "Goblin Worgen Vrykul". Each needs its options below.
 #                     None is chosen by default: each realm picks its own.
 #        Default:     ""
 #
@@ -59,441 +38,36 @@ CustomRaces.Enable = 1
 CustomRaces.Races = ""
 
 #
-#    CustomRaces.Goblin.Base
-#        Description: The stock race the Goblin leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Orc"
+#    The options of each race, <race> being its key. The setup page of AFK Realm writes them from the game client.
+#
+#    CustomRaces.<race>.Source        The race's row in ChrRaces.dbc of the client: where its looks come from.
+#    CustomRaces.<race>.Id            Its race number on this realm, 1 to 31 (races are bits of a 32-bit mask):
+#                                     its row's own number when that is below 32, otherwise a free number (one
+#                                     no row of ChrRaces.dbc has; 14, 15, 17, 18, 21-31 in the CoA client). It
+#                                     keeps it while switched off, so its characters get their race back; 0 gives
+#                                     it up (its characters then stay their base race for good).
+#    CustomRaces.<race>.Copy          1: the race's row is copied to its number (Source is 32 or more), 0: not.
+#    CustomRaces.<race>.Name          Its name in the game.
+#    CustomRaces.<race>.Prefix        ClientPrefix of its row.
+#    CustomRaces.<race>.File          ClientFilestring of its row: the name of its model folder.
+#    CustomRaces.<race>.MaleDisplay   MaleDisplayId of its row.
+#    CustomRaces.<race>.FemaleDisplay FemaleDisplayId of its row.
+#    CustomRaces.<race>.MaleOnly      1: the client has no female body for it; its characters are men.
+#    CustomRaces.<race>.Base          The stock race it leans on, by name: Human, Orc, Dwarf, NightElf, Undead,
+#                                     Tauren, Gnome, Troll, BloodElf or Draenei. Pick it before players make
+#                                     characters of the race: changed later, they keep their place but may
+#                                     change sides.
+#
+#    Example (the Goblin of the CoA client):
+#
+#    CustomRaces.Goblin.Source = 9
+#    CustomRaces.Goblin.Id = 9
+#    CustomRaces.Goblin.Copy = 0
+#    CustomRaces.Goblin.Name = "Goblin"
+#    CustomRaces.Goblin.Prefix = "Go"
+#    CustomRaces.Goblin.File = "Goblin"
+#    CustomRaces.Goblin.MaleDisplay = 6894
+#    CustomRaces.Goblin.FemaleDisplay = 6895
+#    CustomRaces.Goblin.MaleOnly = 0
+#    CustomRaces.Goblin.Base = "Orc"
 #
-
-CustomRaces.Goblin.Base = "Orc"
-
-#
-#    CustomRaces.Zandalari.Base
-#        Description: The stock race the Zandalari Troll leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Troll"
-#
-
-CustomRaces.Zandalari.Base = "Troll"
-
-#
-#    CustomRaces.Worgen.Base
-#        Description: The stock race the Worgen leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.Worgen.Base = "Human"
-
-#
-#    CustomRaces.KulTiran.Base
-#        Description: The stock race the Kul Tiran leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.KulTiran.Base = "Human"
-
-#
-#    CustomRaces.Vulpera.Base
-#        Description: The stock race the Vulpera leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Tauren"
-#
-
-CustomRaces.Vulpera.Base = "Tauren"
-
-#
-#    CustomRaces.Pandaren.Base
-#        Description: The stock race the Pandaren leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.Pandaren.Base = "Human"
-
-#
-#    CustomRaces.HighElf.Id
-#        Description: The number the High Elf has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.HighElf.Id = 0
-
-#
-#    CustomRaces.HighElf.Base
-#        Description: The stock race the High Elf leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.HighElf.Base = "Human"
-
-#
-#    CustomRaces.FelOrc.Id
-#        Description: The number the Fel Orc has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.FelOrc.Id = 0
-
-#
-#    CustomRaces.FelOrc.Base
-#        Description: The stock race the Fel Orc leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Orc"
-#
-
-CustomRaces.FelOrc.Base = "Orc"
-
-#
-#    CustomRaces.Broken.Id
-#        Description: The number the Broken has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Broken.Id = 0
-
-#
-#    CustomRaces.Broken.Base
-#        Description: The stock race the Broken leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Draenei"
-#
-
-CustomRaces.Broken.Base = "Draenei"
-
-#
-#    CustomRaces.Earthen.Id
-#        Description: The number the Earthen has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Earthen.Id = 0
-
-#
-#    CustomRaces.Earthen.Base
-#        Description: The stock race the Earthen leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Dwarf"
-#
-
-CustomRaces.Earthen.Base = "Dwarf"
-
-#
-#    CustomRaces.Drakkari.Id
-#        Description: The number the Drakkari Troll has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Drakkari.Id = 0
-
-#
-#    CustomRaces.Drakkari.Base
-#        Description: The stock race the Drakkari Troll leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Troll"
-#
-
-CustomRaces.Drakkari.Base = "Troll"
-
-#
-#    CustomRaces.Vrykul.Id
-#        Description: The number the Vrykul has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Vrykul.Id = 0
-
-#
-#    CustomRaces.Vrykul.Base
-#        Description: The stock race the Vrykul leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.Vrykul.Base = "Human"
-
-#
-#    CustomRaces.Tuskarr.Id
-#        Description: The number the Tuskarr has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Tuskarr.Id = 0
-
-#
-#    CustomRaces.Tuskarr.Base
-#        Description: The stock race the Tuskarr leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Dwarf"
-#
-
-CustomRaces.Tuskarr.Base = "Dwarf"
-
-#
-#    CustomRaces.Taunka.Id
-#        Description: The number the Taunka has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Taunka.Id = 0
-
-#
-#    CustomRaces.Taunka.Base
-#        Description: The stock race the Taunka leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Tauren"
-#
-
-CustomRaces.Taunka.Base = "Tauren"
-
-#
-#    CustomRaces.ForestTroll.Id
-#        Description: The number the Forest Troll has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.ForestTroll.Id = 0
-
-#
-#    CustomRaces.ForestTroll.Base
-#        Description: The stock race the Forest Troll leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Troll"
-#
-
-CustomRaces.ForestTroll.Base = "Troll"
-
-#
-#    CustomRaces.IceTroll.Id
-#        Description: The number the Ice Troll has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.IceTroll.Id = 0
-
-#
-#    CustomRaces.IceTroll.Base
-#        Description: The stock race the Ice Troll leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Troll"
-#
-
-CustomRaces.IceTroll.Base = "Troll"
-
-#
-#    CustomRaces.Skeleton.Id
-#        Description: The number the Skeleton has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Skeleton.Id = 0
-
-#
-#    CustomRaces.Skeleton.Base
-#        Description: The stock race the Skeleton leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Undead"
-#
-
-CustomRaces.Skeleton.Base = "Undead"
-
-#
-#    CustomRaces.Naga.Id
-#        Description: The number the Naga has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Naga.Id = 0
-
-#
-#    CustomRaces.Naga.Base
-#        Description: The stock race the Naga leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Undead"
-#
-
-CustomRaces.Naga.Base = "Undead"
-
-#
-#    CustomRaces.NorthrendSkeleton.Id
-#        Description: The number the Northrend Skeleton has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.NorthrendSkeleton.Id = 0
-
-#
-#    CustomRaces.NorthrendSkeleton.Base
-#        Description: The stock race the Northrend Skeleton leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Undead"
-#
-
-CustomRaces.NorthrendSkeleton.Base = "Undead"
-
-#
-#    CustomRaces.LeperTroll.Id
-#        Description: The number the Leper Troll has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.LeperTroll.Id = 0
-
-#
-#    CustomRaces.LeperTroll.Base
-#        Description: The stock race the Leper Troll leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Troll"
-#
-
-CustomRaces.LeperTroll.Base = "Troll"
-
-#
-#    CustomRaces.Troglodyte.Id
-#        Description: The number the Troglodyte has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.Troglodyte.Id = 0
-
-#
-#    CustomRaces.Troglodyte.Base
-#        Description: The stock race the Troglodyte leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Dwarf"
-#
-
-CustomRaces.Troglodyte.Base = "Dwarf"
-
-#
-#    CustomRaces.ThinHuman.Id
-#        Description: The number the Thin Human has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.ThinHuman.Id = 0
-
-#
-#    CustomRaces.ThinHuman.Base
-#        Description: The stock race the Thin Human leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.ThinHuman.Base = "Human"
-
-#
-#    CustomRaces.HumanCultist.Id
-#        Description: The number the Human Cultist has on this realm: one of the free race numbers 14, 15, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31.
-#                     Races are bits of a 32-bit mask, so only 15 races without a number of their own can be on at
-#                     once. AFK Realm gives each race the next free number when it is chosen, and keeps it while the
-#                     race is switched off, so that its characters get it back. 0: no number - the race is off.
-#        Default:     0
-#
-
-CustomRaces.HumanCultist.Id = 0
-
-#
-#    CustomRaces.HumanCultist.Base
-#        Description: The stock race the Human Cultist leans on, by name: Human, Orc, Dwarf, NightElf, Undead, Tauren,
-#                     Gnome, Troll, BloodElf or Draenei. It starts where a new character of that race starts, gets
-#                     its quests, stats and racial abilities, and plays for its faction. Pick it before players make
-#                     characters of the race: changed later, they keep their place but may change sides.
-#        Default:     "Human"
-#
-
-CustomRaces.HumanCultist.Base = "Human"

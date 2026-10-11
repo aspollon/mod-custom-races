@@ -1,7 +1,7 @@
--- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/pool.py.
+-- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/races.py.
 -- Characters of its races play a stock race from now on: the base race the module gave them (kept in
--- `custom_races_base` while it ran, by the number each race had). Their race and looks are kept aside in `custom_races_moved`;
--- the module, installed again, gives them back.
+-- `custom_races_base` while it ran, by the number each race had). Their race and looks are kept aside in
+-- `custom_races_moved`; the module, installed again, gives them back.
 CREATE TABLE IF NOT EXISTS `custom_races_moved` (
   `guid` INT UNSIGNED NOT NULL,
   `race` TINYINT UNSIGNED NOT NULL,

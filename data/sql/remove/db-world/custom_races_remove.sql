@@ -1,6 +1,6 @@
--- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/pool.py.
+-- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/races.py.
 -- The module writes the rows of its races at every start, and removes those of the races that are off; these are the
--- rows of all its races, by race id and race mask.
+-- rows of every race number it could have used, by race id and race mask.
 DELETE FROM `chrraces_dbc` WHERE `ID` IN (9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
 DELETE FROM `playercreateinfo` WHERE `race` IN (9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
 DELETE FROM `playercreateinfo_action` WHERE `race` IN (9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);

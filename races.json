@@ -28,213 +28,171 @@
   "BloodElf",
   "Draenei"
  ],
- "races": [
-  {
-   "key": "Goblin",
-   "name": "Goblin",
-   "id": 9,
-   "source": 9,
+ "known": {
+  "Goblin": {
    "base": "Orc",
    "looks": "armor",
-   "about": "Goblins are cunning merchants and inventors, and the best of them sell to everyone."
+   "about": "Goblins are cunning merchants and inventors, and the best of them sell to everyone.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Zandalari",
-   "name": "Zandalari Troll",
-   "id": 12,
-   "source": 12,
+  "ZandalariTroll": {
    "base": "Troll",
    "looks": "armor",
-   "about": "The Zandalari are the oldest of the trolls, proud keepers of their gods and their empire."
+   "about": "The Zandalari are the oldest of the trolls, proud keepers of their gods and their empire.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Worgen",
-   "name": "Worgen",
-   "id": 13,
-   "source": 13,
+  "Worgen": {
    "base": "Human",
    "looks": "armor",
-   "about": "Cursed people of Gilneas who keep their minds in the shape of a wolf."
+   "about": "Cursed people of Gilneas who keep their minds in the shape of a wolf.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "KulTiran",
-   "name": "Kul Tiran",
-   "id": 16,
-   "source": 16,
+  "KulTiran": {
    "base": "Human",
    "looks": "armor",
-   "about": "Sturdy sailors of the island kingdom of Kul Tiras."
+   "about": "Sturdy sailors of the island kingdom of Kul Tiras.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Vulpera",
-   "name": "Vulpera",
-   "id": 19,
-   "source": 19,
+  "Vulpera": {
    "base": "Tauren",
    "looks": "armor",
-   "about": "Small desert foxes, scavengers and travellers who make a home wherever their caravan stops."
+   "about": "Small desert foxes, scavengers and travellers who make a home wherever their caravan stops.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Pandaren",
-   "name": "Pandaren",
-   "id": 20,
-   "source": 20,
+  "Pandaren": {
    "base": "Human",
    "looks": "armor",
-   "about": "Wanderers from the Wandering Isle who seek balance - and good food."
+   "about": "Wanderers from the Wandering Isle who seek balance - and good food.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "HighElf",
-   "name": "High Elf",
-   "id": 0,
-   "source": 10,
+  "HighElf": {
    "base": "Human",
    "looks": "armor",
-   "about": "The quel'dorei who stayed true to the Alliance after the fall of Quel'Thalas."
+   "about": "The quel'dorei who stayed true to the Alliance after the fall of Quel'Thalas.",
+   "rating": "",
+   "note": "",
+   "virtual": {
+    "source": 10,
+    "name": "High Elf"
+   }
   },
-  {
-   "key": "FelOrc",
-   "name": "Fel Orc",
-   "id": 0,
-   "source": 34,
+  "FelOrc": {
    "base": "Orc",
    "looks": "male",
-   "about": "Orcs who drank the blood of demons, and kept its fury."
+   "about": "Orcs who drank the blood of demons, and kept its fury.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Broken",
-   "name": "Broken",
-   "id": 0,
-   "source": 36,
+  "Broken": {
    "base": "Draenei",
    "looks": "male",
-   "about": "Draenei changed by the fel magic of the orcs, who still remember who they were."
+   "about": "Draenei changed by the fel magic of the orcs, who still remember who they were.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Earthen",
-   "name": "Earthen",
-   "id": 0,
-   "source": 62,
+  "Earthen": {
    "base": "Dwarf",
    "looks": "armor",
-   "about": "Living stone shaped by the titans, the forefathers of the dwarves."
+   "about": "Living stone shaped by the titans, the forefathers of the dwarves.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Drakkari",
-   "name": "Drakkari Troll",
-   "id": 0,
-   "source": 44,
+  "DrakkariTroll": {
    "base": "Troll",
    "looks": "armor",
-   "about": "The ice trolls of Zul'Drak, an empire that fell to the Scourge."
+   "about": "The ice trolls of Zul'Drak, an empire that fell to the Scourge.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Vrykul",
-   "name": "Vrykul",
-   "id": 0,
-   "source": 38,
+  "Vrykul": {
    "base": "Human",
    "looks": "male",
-   "about": "Giant warriors of Northrend, made by the titans and fond of battle."
+   "about": "Giant warriors of Northrend, made by the titans and fond of battle.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Tuskarr",
-   "name": "Tuskarr",
-   "id": 0,
-   "source": 39,
+  "Tuskarr": {
    "base": "Dwarf",
    "looks": "male",
-   "about": "Fishers and hunters of the Northrend coasts, friendly to all who come in peace."
+   "about": "Fishers and hunters of the Northrend coasts, friendly to all who come in peace.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Taunka",
-   "name": "Taunka",
-   "id": 0,
-   "source": 41,
+  "Taunka": {
    "base": "Tauren",
    "looks": "male",
-   "about": "The northern cousins of the tauren, hardened by the cold of Northrend."
+   "about": "The northern cousins of the tauren, hardened by the cold of Northrend.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "ForestTroll",
-   "name": "Forest Troll",
-   "id": 0,
-   "source": 40,
+  "ForestTroll": {
    "base": "Troll",
    "looks": "male",
-   "about": "The trolls of the forests of Lordaeron and the Hinterlands."
+   "about": "The trolls of the forests of Lordaeron and the Hinterlands.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "IceTroll",
-   "name": "Ice Troll",
-   "id": 0,
-   "source": 43,
+  "IceTroll": {
    "base": "Troll",
    "looks": "male",
-   "about": "The trolls of the frozen north, tough as the ice they live on."
+   "about": "The trolls of the frozen north, tough as the ice they live on.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Skeleton",
-   "name": "Skeleton",
-   "id": 0,
-   "source": 37,
+  "Skeleton": {
    "base": "Undead",
    "looks": "male",
-   "about": "Bones that walk on their own, free of the Lich King."
+   "about": "Bones that walk on their own, free of the Lich King.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Naga",
-   "name": "Naga",
-   "id": 0,
-   "source": 35,
+  "Naga": {
    "base": "Undead",
    "looks": "noarmor",
-   "about": "Serpent people of the deep sea, once night elves of Zin-Azshari."
+   "about": "Serpent people of the deep sea, once night elves of Zin-Azshari.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "NorthrendSkeleton",
-   "name": "Northrend Skeleton",
-   "id": 0,
-   "source": 42,
+  "NorthrendSkeleton": {
    "base": "Undead",
    "looks": "male",
-   "about": "The bones of Northrend, risen in the cold and left without a master."
+   "about": "The bones of Northrend, risen in the cold and left without a master.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "LeperTroll",
-   "name": "Leper Troll",
-   "id": 0,
-   "source": 45,
+  "LeperTroll": {
    "base": "Troll",
    "looks": "untested",
-   "about": "Trolls marked by a wasting sickness, and the harder for it."
+   "about": "Trolls marked by a wasting sickness, and the harder for it.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "Troglodyte",
-   "name": "Troglodyte",
-   "id": 0,
-   "source": 46,
+  "Troglodyte": {
    "base": "Dwarf",
    "looks": "male",
-   "about": "Cave dwellers of the deep places of the world."
+   "about": "Cave dwellers of the deep places of the world.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "ThinHuman",
-   "name": "Thin Human",
-   "id": 0,
-   "source": 33,
+  "ThinHuman": {
    "base": "Human",
    "looks": "male",
-   "about": "A lean folk of humans, quick and wiry."
+   "about": "A lean folk of humans, quick and wiry.",
+   "rating": "",
+   "note": ""
   },
-  {
-   "key": "HumanCultist",
-   "name": "Human Cultist",
-   "id": 0,
-   "source": 63,
+  "HumanCultist": {
    "base": "Human",
    "looks": "untested",
-   "about": "Humans who gave themselves to dark powers - and lived to tell of it."
+   "about": "Humans who gave themselves to dark powers - and lived to tell of it.",
+   "rating": "",
+   "note": ""
   }
- ]
+ }
 }

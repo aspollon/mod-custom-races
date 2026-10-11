@@ -11,17 +11,29 @@ same way and wait for their test.
 
 ## The races
 
-None is on by default: each realm chooses its own (`CustomRaces.Races`, or the setup page of AFK Realm).
+The races are not fixed by the module: they are the races of the game client. The setup page of AFK Realm reads them
+from the player's own client - every race beyond the ten stock races it has a body for - and writes what the server
+and the client patch need of each into `mod_custom_races.conf` (`CustomRaces.<race>.*`). After an update of the game,
+opening the page again reads them anew. None is on by default: each realm chooses its own (`CustomRaces.Races`).
+
+In the CoA client these are 22 races, and the module adds the High Elf, made from the Blood Elf:
 
 | Shows armour, male and female | Male only (the game has no female model) | Shows no armour | Not tried yet |
 |---|---|---|---|
 | Goblin, Zandalari Troll, Worgen, Kul Tiran, Vulpera, Pandaren, High Elf, Earthen, Drakkari Troll | Fel Orc, Broken, Vrykul, Tuskarr, Taunka, Forest Troll, Ice Troll, Skeleton, Northrend Skeleton, Troglodyte, Thin Human | Naga | Leper Troll, Human Cultist |
 
-**Race numbers.** Races are bits of a 32-bit mask, so the game knows race numbers up to 31. Goblin, Zandalari Troll,
-Worgen, Kul Tiran, Vulpera and Pandaren have a number of their own. The others take one of the 15 free numbers (14,
-15, 17, 18, 21-31) when they are switched on (`CustomRaces.<race>.Id`): at most 15 of them can be on at once. A race
-switched off keeps its number, so its characters get their race back; giving up the number (setting it to 0) frees it
-for another race, and the characters of the race stay their base race for good.
+A race the module knows nothing about (from another client, or a later version of this one) is offered all the same,
+under "Not tried yet", leaning on the stock race its name suggests.
+
+**Race numbers.** Races are bits of a 32-bit mask, so the game knows race numbers up to 31. A race whose row in the
+client's race table is below 32 keeps that number (six in the CoA client). The others take one of the numbers no row
+has (15 in the CoA client: 14, 15, 17, 18, 21-31) when they are switched on (`CustomRaces.<race>.Id`): at most that
+many of them can be on at once. A race switched off keeps its number, so its characters get their race back; giving
+up the number (setting it to 0) frees it for another race, and the characters of the race stay their base race for
+good.
+
+**Portraits** on the race choice are round like those of the stock races: an older round portrait of the game (Goblin,
+Worgen), an icon of the game cut round, or the round portrait of its base race.
 
 ## What a new race is
 
@@ -57,9 +69,10 @@ and their side from the core's race table.
 | Option | Default | |
 |---|---|---|
 | `CustomRaces.Enable` | 1 | The races of `CustomRaces.Races` can be created and played. |
-| `CustomRaces.Races` | (none) | The races that are playable, by name, for example `Goblin Worgen Vrykul`. |
-| `CustomRaces.<race>.Base` | per race | The stock race it leans on: start, quests, stats, racial abilities and faction. |
-| `CustomRaces.<race>.Id` | 0 | For a race without a number of its own: its race number, one of the free numbers. |
+| `CustomRaces.Races` | (none) | The races that are playable, by key (the English name without spaces), for example `Goblin Worgen Vrykul`. |
+| `CustomRaces.<race>.Base` | by name | The stock race it leans on: start, quests, stats, racial abilities and faction. |
+| `CustomRaces.<race>.Id` | its own | Its race number: its own below 32, otherwise one of the free numbers. |
+| `CustomRaces.<race>.Source`, `.Copy`, `.Name`, `.Prefix`, `.File`, `.MaleDisplay`, `.FemaleDisplay`, `.MaleOnly` | from the client | Its row in the client's ChrRaces.dbc and what it holds; written by the setup page. |
 
 ## Install
 
@@ -68,8 +81,8 @@ their base races and gives them their numbers; *Modules › Game client › Inst
 game client and puts it into your game. Every player needs the client patch (*Export as ZIP* gives it to the others).
 
 **By hand:** copy the module into `modules/` of the CoA core, apply `patches/core-custom-races.patch`, build, set the
-options. The client patch is an MPQ that loads after the client's own (for example `Data\patch-Y.MPQ`); what it holds
-for each race is described in `afk-realm.json` (`client.patch`): the race's row of `ChrRaces.dbc` made playable for
+options (the values of each race from the client's `ChrRaces.dbc`; the `.conf.dist` shows them for the Goblin). The client patch is an MPQ that loads after the client's own (for example `Data\patch-Y.MPQ`); what it holds
+for each chosen race is described in `afk-realm.json` (`client.patch`, one set of changes done `forEach` race): the race's row of `ChrRaces.dbc` made playable for
 the faction of its base race (copied to its number when it has none of its own), its classes in `CharBaseInfo.dbc`,
 its skins, hair and beards copied to its number (`CharSections`, `CharHairGeosets`, `CharacterFacialHairStyles`,
 `CharHairTextures` and their HD tables), names in `NameGen.dbc`, and the outfits of its base race
@@ -78,9 +91,10 @@ in `Interface\GlueXML\GlueXML.toc`.
 
 ## For the module's makers
 
-The races are kept in one table, `tools/pool.py`. Running it writes `src/RacePool.h`, `races.json` (for the setup page
-of AFK Realm), the settings in `conf/`, the client patch in `afk-realm.json`, the pool part of `client/CustomRaces.lua`
-and `data/sql/remove`.
+What the module knows beyond the client is kept in one table, `tools/races.py`: a text, the base race that fits, how
+a race looks in game, a rating, a better portrait, and races made from another (the High Elf). Running it writes
+`races.json` (for the setup page of AFK Realm), the client patch in `afk-realm.json`, the part of
+`client/CustomRaces.lua` between `@KNOWN BEGIN` and `@KNOWN END`, and `data/sql/remove`.
 
 ## Status
 
