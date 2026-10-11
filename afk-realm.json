@@ -2654,7 +2654,12 @@
         "default": 0
        }
       },
-      "newId": true
+      "idGroup": "CharSections",
+      "idKey": {
+       "setting": "CustomRaces.{each}.Id",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      }
      },
      "forEach": {
       "conf": "mod_custom_races.conf",
@@ -2696,7 +2701,12 @@
         "default": 0
        }
       },
-      "newId": true
+      "idGroup": "CharSections",
+      "idKey": {
+       "setting": "CustomRaces.{each}.Id",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      }
      },
      "forEach": {
       "conf": "mod_custom_races.conf",
@@ -2738,7 +2748,12 @@
         "default": 0
        }
       },
-      "newId": true
+      "idGroup": "CharHairGeosets",
+      "idKey": {
+       "setting": "CustomRaces.{each}.Id",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      }
      },
      "forEach": {
       "conf": "mod_custom_races.conf",
@@ -2780,7 +2795,12 @@
         "default": 0
        }
       },
-      "newId": true
+      "idGroup": "CharHairGeosets",
+      "idKey": {
+       "setting": "CustomRaces.{each}.Id",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      }
      },
      "forEach": {
       "conf": "mod_custom_races.conf",

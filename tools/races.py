@@ -174,7 +174,11 @@ def client_edits():
                                      ('HDCharHairGeosets', 1, True), ('CharacterFacialHairStyles', 0, False),
                                      ('HDCharacterFacialHairStyles', 1, True), ('CharHairTextures', 1, True)):
         spec = {'match': {str(field): source}, 'set': {str(field): race_id}}
-        if new_row_id:
+        if table.replace('HD', '') in ('CharSections', 'CharHairGeosets'):
+            # The HD table pairs with the plain one by id: a copied row and its HD copy need the same new id.
+            spec['idGroup'] = table.replace('HD', '')
+            spec['idKey'] = race_id
+        elif new_row_id:
             spec['newId'] = True
         each({'file': 'DBFilesClient\\%s.dbc' % table, 'copyRows': spec}, cond('Copy', **{'is': '1'}))
     return edits
