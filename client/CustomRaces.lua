@@ -216,13 +216,13 @@ local function Layout(count)
 	end
 	local size = CharCreateRaceButton1 and CharCreateRaceButton1:GetHeight() or 52
 	local room = math.max(300, (CharCreateRaceButtonsFrame:GetHeight() or 620) - 120)
-	local fit = math.max(1, math.floor((room + 8) / (size + 8)))
+	local fit = math.max(1, math.floor((room + 12) / (size + 12)))
 	local function place(button, faction, column, row, gap)
 		button:ClearAllPoints()
 		if faction == "Alliance" then
-			button:SetPoint("TOPLEFT", CharCreateRaceButtonsFrame, "TOPLEFT", 32 + column * (size + 18), -75 - row * (size + gap))
+			button:SetPoint("TOPLEFT", CharCreateRaceButtonsFrame, "TOPLEFT", 32 + column * 170, -75 - row * (size + gap))
 		else
-			button:SetPoint("TOPRIGHT", CharCreateRaceButtonsFrame, "TOPRIGHT", -32 - column * (size + 18), -75 - row * (size + gap))
+			button:SetPoint("TOPRIGHT", CharCreateRaceButtonsFrame, "TOPRIGHT", -32 - column * 170, -75 - row * (size + gap))
 		end
 		button:SetFaction(faction)
 		button:Show()
@@ -235,7 +235,7 @@ local function Layout(count)
 		end
 		local first = n > 0 and 1 or 0
 		for k, i in ipairs(side.added) do
-			place(_G["CharCreateRaceButton" .. i], faction, first + math.floor((k - 1) / fit), (k - 1) % fit, 8)
+			place(_G["CharCreateRaceButton" .. i], faction, first + math.floor((k - 1) / fit), (k - 1) % fit, 12)
 		end
 	end
 end
