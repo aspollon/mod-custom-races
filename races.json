@@ -32,49 +32,42 @@
   "Goblin": {
    "base": "Orc",
    "looks": "armor",
-   "about": "Goblins are cunning merchants and inventors, and the best of them sell to everyone.",
    "rating": "",
    "note": ""
   },
   "ZandalariTroll": {
    "base": "Troll",
    "looks": "armor",
-   "about": "The Zandalari are the oldest of the trolls, proud keepers of their gods and their empire.",
    "rating": "",
    "note": ""
   },
   "Worgen": {
    "base": "Human",
    "looks": "armor",
-   "about": "Cursed people of Gilneas who keep their minds in the shape of a wolf.",
    "rating": "",
    "note": ""
   },
   "KulTiran": {
    "base": "Human",
    "looks": "armor",
-   "about": "Sturdy sailors of the island kingdom of Kul Tiras.",
    "rating": "",
    "note": ""
   },
   "Vulpera": {
    "base": "Tauren",
    "looks": "armor",
-   "about": "Small desert foxes, scavengers and travellers who make a home wherever their caravan stops.",
    "rating": "",
    "note": ""
   },
   "Pandaren": {
    "base": "Human",
    "looks": "armor",
-   "about": "Wanderers from the Wandering Isle who seek balance - and good food.",
    "rating": "",
    "note": ""
   },
   "HighElf": {
    "base": "Human",
    "looks": "armor",
-   "about": "The quel'dorei who stayed true to the Alliance after the fall of Quel'Thalas.",
    "rating": "",
    "note": "",
    "virtual": {
@@ -85,112 +78,96 @@
   "FelOrc": {
    "base": "Orc",
    "looks": "male",
-   "about": "Orcs who drank the blood of demons, and kept its fury.",
    "rating": "",
    "note": ""
   },
   "Broken": {
    "base": "Draenei",
    "looks": "male",
-   "about": "Draenei changed by the fel magic of the orcs, who still remember who they were.",
    "rating": "",
    "note": ""
   },
   "Earthen": {
    "base": "Dwarf",
    "looks": "armor",
-   "about": "Living stone shaped by the titans, the forefathers of the dwarves.",
    "rating": "",
    "note": ""
   },
   "DrakkariTroll": {
    "base": "Troll",
    "looks": "armor",
-   "about": "The ice trolls of Zul'Drak, an empire that fell to the Scourge.",
    "rating": "",
    "note": ""
   },
   "Vrykul": {
    "base": "Human",
    "looks": "male",
-   "about": "Giant warriors of Northrend, made by the titans and fond of battle.",
    "rating": "",
    "note": ""
   },
   "Tuskarr": {
    "base": "Dwarf",
    "looks": "male",
-   "about": "Fishers and hunters of the Northrend coasts, friendly to all who come in peace.",
    "rating": "",
    "note": ""
   },
   "Taunka": {
    "base": "Tauren",
    "looks": "male",
-   "about": "The northern cousins of the tauren, hardened by the cold of Northrend.",
    "rating": "",
    "note": ""
   },
   "ForestTroll": {
    "base": "Troll",
    "looks": "male",
-   "about": "The trolls of the forests of Lordaeron and the Hinterlands.",
    "rating": "",
    "note": ""
   },
   "IceTroll": {
    "base": "Troll",
    "looks": "male",
-   "about": "The trolls of the frozen north, tough as the ice they live on.",
    "rating": "",
    "note": ""
   },
   "Skeleton": {
    "base": "Undead",
    "looks": "male",
-   "about": "Bones that walk on their own, free of the Lich King.",
    "rating": "",
    "note": ""
   },
   "Naga": {
    "base": "Undead",
    "looks": "noarmor",
-   "about": "Serpent people of the deep sea, once night elves of Zin-Azshari.",
    "rating": "",
    "note": ""
   },
   "NorthrendSkeleton": {
    "base": "Undead",
    "looks": "male",
-   "about": "The bones of Northrend, risen in the cold and left without a master.",
    "rating": "",
    "note": ""
   },
   "LeperTroll": {
    "base": "Troll",
    "looks": "untested",
-   "about": "Trolls marked by a wasting sickness, and the harder for it.",
    "rating": "",
    "note": ""
   },
   "Troglodyte": {
    "base": "Dwarf",
    "looks": "male",
-   "about": "Cave dwellers of the deep places of the world.",
    "rating": "",
    "note": ""
   },
   "ThinHuman": {
    "base": "Human",
    "looks": "male",
-   "about": "A lean folk of humans, quick and wiry.",
    "rating": "",
    "note": ""
   },
   "HumanCultist": {
    "base": "Human",
    "looks": "untested",
-   "about": "Humans who gave themselves to dark powers - and lived to tell of it.",
    "rating": "",
    "note": ""
   }

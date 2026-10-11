@@ -11,52 +11,29 @@ local RACES = {}
 
 -- @KNOWN BEGIN (written by tools/races.py)
 local KNOWN = {
-	Goblin = { portrait = { kind = "old", male = { 0.625, 0.75, 0.25, 0.5 }, female = { 0.625, 0.75, 0.75, 1.0 } },
-		info = "Goblins are cunning merchants and inventors, and the best of them sell to everyone." },
-	ZandalariTroll = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_zandalaritroll", female = "Interface\\Icons\\achievement_alliedrace_zandalaritroll" },
-		info = "The Zandalari are the oldest of the trolls, proud keepers of their gods and their empire." },
-	Worgen = { portrait = { kind = "old", male = { 0.625, 0.75, 0.0, 0.25 }, female = { 0.625, 0.75, 0.5, 0.75 } },
-		info = "Cursed people of Gilneas who keep their minds in the shape of a wolf." },
-	KulTiran = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_kultiranhuman", female = "Interface\\Icons\\achievement_alliedrace_kultiranhuman" },
-		info = "Sturdy sailors of the island kingdom of Kul Tiras." },
-	Vulpera = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_vulpera", female = "Interface\\Icons\\achievement_alliedrace_vulpera" },
-		info = "Small desert foxes, scavengers and travellers who make a home wherever their caravan stops." },
-	Pandaren = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_character_pandaren_female", female = "Interface\\Icons\\achievement_character_pandaren_female" },
-		info = "Wanderers from the Wandering Isle who seek balance - and good food." },
-	HighElf = { portrait = { kind = "round", key = "BLOODELF" },
-		info = "The quel'dorei who stayed true to the Alliance after the fall of Quel'Thalas." },
-	FelOrc = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_hellfire_felorccouncil", female = "Interface\\Icons\\achievement_boss_hellfire_felorccouncil" },
-		info = "Orcs who drank the blood of demons, and kept its fury." },
-	Broken = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_triumvirate_voidbrokenbrute", female = "Interface\\Icons\\achievement_boss_triumvirate_voidbrokenbrute" },
-		info = "Draenei changed by the fel magic of the orcs, who still remember who they were." },
-	Earthen = { portrait = nil,
-		info = "Living stone shaped by the titans, the forefathers of the dwarves." },
-	DrakkariTroll = { portrait = nil,
-		info = "The ice trolls of Zul'Drak, an empire that fell to the Scourge." },
-	Vrykul = { portrait = { kind = "icon", male = "Interface\\Icons\\inv_misc_head_vrykul", female = "Interface\\Icons\\inv_misc_head_vrykul" },
-		info = "Giant warriors of Northrend, made by the titans and fond of battle." },
-	Tuskarr = { portrait = { kind = "icon", male = "Interface\\Icons\\inv_misc_head_tuskarr", female = "Interface\\Icons\\inv_misc_head_tuskarr" },
-		info = "Fishers and hunters of the Northrend coasts, friendly to all who come in peace." },
-	Taunka = { portrait = nil,
-		info = "The northern cousins of the tauren, hardened by the cold of Northrend." },
-	ForestTroll = { portrait = nil,
-		info = "The trolls of the forests of Lordaeron and the Hinterlands." },
-	IceTroll = { portrait = nil,
-		info = "The trolls of the frozen north, tough as the ice they live on." },
-	Skeleton = { portrait = nil,
-		info = "Bones that walk on their own, free of the Lich King." },
-	Naga = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_nagazone", female = "Interface\\Icons\\achievement_boss_nagazone" },
-		info = "Serpent people of the deep sea, once night elves of Zin-Azshari." },
-	NorthrendSkeleton = { portrait = nil,
-		info = "The bones of Northrend, risen in the cold and left without a master." },
-	LeperTroll = { portrait = nil,
-		info = "Trolls marked by a wasting sickness, and the harder for it." },
-	Troglodyte = { portrait = { kind = "icon", male = "Interface\\Icons\\inv_misc_head_kobold_01", female = "Interface\\Icons\\inv_misc_head_kobold_01" },
-		info = "Cave dwellers of the deep places of the world." },
-	ThinHuman = { portrait = nil,
-		info = "A lean folk of humans, quick and wiry." },
-	HumanCultist = { portrait = nil,
-		info = "Humans who gave themselves to dark powers - and lived to tell of it." },
+	Goblin = { portrait = { kind = "old", male = { 0.625, 0.75, 0.25, 0.5 }, female = { 0.625, 0.75, 0.75, 1.0 } } },
+	ZandalariTroll = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_zandalaritroll", female = "Interface\\Icons\\achievement_alliedrace_zandalaritroll" } },
+	Worgen = { portrait = { kind = "old", male = { 0.625, 0.75, 0.0, 0.25 }, female = { 0.625, 0.75, 0.5, 0.75 } } },
+	KulTiran = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_kultiranhuman", female = "Interface\\Icons\\achievement_alliedrace_kultiranhuman" } },
+	Vulpera = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_vulpera", female = "Interface\\Icons\\achievement_alliedrace_vulpera" } },
+	Pandaren = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_character_pandaren_female", female = "Interface\\Icons\\achievement_character_pandaren_female" } },
+	HighElf = { portrait = { kind = "round", key = "BLOODELF" } },
+	FelOrc = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_hellfire_felorccouncil", female = "Interface\\Icons\\achievement_boss_hellfire_felorccouncil" } },
+	Broken = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_triumvirate_voidbrokenbrute", female = "Interface\\Icons\\achievement_boss_triumvirate_voidbrokenbrute" } },
+	Earthen = { portrait = nil },
+	DrakkariTroll = { portrait = nil },
+	Vrykul = { portrait = { kind = "icon", male = "Interface\\Icons\\inv_misc_head_vrykul", female = "Interface\\Icons\\inv_misc_head_vrykul" } },
+	Tuskarr = { portrait = { kind = "icon", male = "Interface\\Icons\\inv_misc_head_tuskarr", female = "Interface\\Icons\\inv_misc_head_tuskarr" } },
+	Taunka = { portrait = nil },
+	ForestTroll = { portrait = nil },
+	IceTroll = { portrait = nil },
+	Skeleton = { portrait = nil },
+	Naga = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_nagazone", female = "Interface\\Icons\\achievement_boss_nagazone" } },
+	NorthrendSkeleton = { portrait = nil },
+	LeperTroll = { portrait = nil },
+	Troglodyte = { portrait = { kind = "icon", male = "Interface\\Icons\\inv_misc_head_kobold_01", female = "Interface\\Icons\\inv_misc_head_kobold_01" } },
+	ThinHuman = { portrait = nil },
+	HumanCultist = { portrait = nil },
 }
 -- The stock races a race can lean on: name in the settings -> file name of the client.
 local BASE_FILES = { Human = "Human", Orc = "Orc", Dwarf = "Dwarf", NightElf = "NightElf", Undead = "Scourge", Tauren = "Tauren", Gnome = "Gnome", Troll = "Troll", BloodElf = "BloodElf", Draenei = "Draenei" }
@@ -83,7 +60,7 @@ end
 local BY_NAME, BY_FILE = {}, {}
 for _, race in ipairs(RACES) do
 	local known = KNOWN[race.key] or {}
-	race.portrait, race.info = known.portrait, known.info
+	race.portrait = known.portrait
 	race.base = BASE_FILES[race.base] and race.base or "Human"
 	race.baseFile = BASE_FILES[race.base]
 	BY_NAME[Plain(race.name)] = race
@@ -109,7 +86,7 @@ end
 local function Lend(race, upper, file)
 	local base = race.baseFile:upper()
 	if not _G["RACE_INFO_" .. upper] or _G["RACE_INFO_" .. upper] == "" then
-		_G["RACE_INFO_" .. upper] = race.info or _G["RACE_INFO_" .. base] or race.name
+		_G["RACE_INFO_" .. upper] = race.name
 	end
 	local prefix = "ABILITY_INFO_" .. base
 	local copies = {}

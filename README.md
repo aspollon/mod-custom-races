@@ -97,7 +97,7 @@ in `Interface\GlueXML\GlueXML.toc`.
 
 ## For the module's makers
 
-What the module knows beyond the client is kept in one table, `tools/races.py`: a text, the base race that fits, how
+What the module knows beyond the client is kept in one table, `tools/races.py`: the base race that fits, how
 a race looks in game, a rating, a better portrait, and races made from another (the High Elf). Running it writes
 `races.json` (for the setup page of AFK Realm), the client patch in `afk-realm.json`, the part of
 `client/CustomRaces.lua` between `@KNOWN BEGIN` and `@KNOWN END`, and `data/sql/remove`.

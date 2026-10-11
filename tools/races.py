@@ -5,7 +5,7 @@ mod-custom-races: what the module knows about races beyond the game client.
 The races themselves come from the game client: AFK Realm reads its race table, finds the races with a player model
 and writes what the server needs of each into mod_custom_races.conf (CustomRaces.<race>.Source, .Id, .Name, .Prefix,
 .File, .MaleDisplay, .FemaleDisplay, .MaleOnly, .Base, .Copy). This table only adds what the client does not say: a
-better portrait, a text, the base race that fits, a rating - and races made from another (the High Elf, from the Blood
+better portrait, the base race that fits, a rating - and races made from another (the High Elf, from the Blood
 Elf). A race of the client that is not in it is offered all the same.
 
 Writes:
@@ -50,49 +50,36 @@ SLOTS = [14, 15, 17, 18] + list(range(21, 32))
 # UI-CHARACTERCREATE-RACESROUND; the female one is two rows lower), ("icon", male icon, female icon - shown round), or
 # none: the round portrait of its base race. virtual: a race made from the row of another (source) under its own name.
 KNOWN = [
-    dict(key='Goblin', base='Orc', looks='armor', portrait=('old', 0.625, 0.75, 0.25, 0.5),
-         about='Goblins are cunning merchants and inventors, and the best of them sell to everyone.'),
+    dict(key='Goblin', base='Orc', looks='armor', portrait=('old', 0.625, 0.75, 0.25, 0.5)),
     dict(key='ZandalariTroll', base='Troll', looks='armor',
-         portrait=('icon', 'achievement_alliedrace_zandalaritroll', 'achievement_alliedrace_zandalaritroll'),
-         about='The Zandalari are the oldest of the trolls, proud keepers of their gods and their empire.'),
-    dict(key='Worgen', base='Human', looks='armor', portrait=('old', 0.625, 0.75, 0.0, 0.25),
-         about='Cursed people of Gilneas who keep their minds in the shape of a wolf.'),
+         portrait=('icon', 'achievement_alliedrace_zandalaritroll', 'achievement_alliedrace_zandalaritroll')),
+    dict(key='Worgen', base='Human', looks='armor', portrait=('old', 0.625, 0.75, 0.0, 0.25)),
     dict(key='KulTiran', base='Human', looks='armor',
-         portrait=('icon', 'achievement_alliedrace_kultiranhuman', 'achievement_alliedrace_kultiranhuman'),
-         about='Sturdy sailors of the island kingdom of Kul Tiras.'),
+         portrait=('icon', 'achievement_alliedrace_kultiranhuman', 'achievement_alliedrace_kultiranhuman')),
     dict(key='Vulpera', base='Tauren', looks='armor',
-         portrait=('icon', 'achievement_alliedrace_vulpera', 'achievement_alliedrace_vulpera'),
-         about='Small desert foxes, scavengers and travellers who make a home wherever their caravan stops.'),
+         portrait=('icon', 'achievement_alliedrace_vulpera', 'achievement_alliedrace_vulpera')),
     dict(key='Pandaren', base='Human', looks='armor',
-         portrait=('icon', 'achievement_character_pandaren_female', 'achievement_character_pandaren_female'),
-         about='Wanderers from the Wandering Isle who seek balance - and good food.'),
+         portrait=('icon', 'achievement_character_pandaren_female', 'achievement_character_pandaren_female')),
     dict(key='HighElf', virtual=dict(source=10, name='High Elf'), base='Human', looks='armor',
-         portrait=('round', 'BLOODELF'),
-         about='The quel\'dorei who stayed true to the Alliance after the fall of Quel\'Thalas.'),
+         portrait=('round', 'BLOODELF')),
     dict(key='FelOrc', base='Orc', looks='male',
-         portrait=('icon', 'achievement_boss_hellfire_felorccouncil', 'achievement_boss_hellfire_felorccouncil'),
-         about='Orcs who drank the blood of demons, and kept its fury.'),
+         portrait=('icon', 'achievement_boss_hellfire_felorccouncil', 'achievement_boss_hellfire_felorccouncil')),
     dict(key='Broken', base='Draenei', looks='male',
-         portrait=('icon', 'achievement_boss_triumvirate_voidbrokenbrute', 'achievement_boss_triumvirate_voidbrokenbrute'),
-         about='Draenei changed by the fel magic of the orcs, who still remember who they were.'),
-    dict(key='Earthen', base='Dwarf', looks='armor', about='Living stone shaped by the titans, the forefathers of the dwarves.'),
-    dict(key='DrakkariTroll', base='Troll', looks='armor', about='The ice trolls of Zul\'Drak, an empire that fell to the Scourge.'),
-    dict(key='Vrykul', base='Human', looks='male', portrait=('icon', 'inv_misc_head_vrykul', 'inv_misc_head_vrykul'),
-         about='Giant warriors of Northrend, made by the titans and fond of battle.'),
-    dict(key='Tuskarr', base='Dwarf', looks='male', portrait=('icon', 'inv_misc_head_tuskarr', 'inv_misc_head_tuskarr'),
-         about='Fishers and hunters of the Northrend coasts, friendly to all who come in peace.'),
-    dict(key='Taunka', base='Tauren', looks='male', about='The northern cousins of the tauren, hardened by the cold of Northrend.'),
-    dict(key='ForestTroll', base='Troll', looks='male', about='The trolls of the forests of Lordaeron and the Hinterlands.'),
-    dict(key='IceTroll', base='Troll', looks='male', about='The trolls of the frozen north, tough as the ice they live on.'),
-    dict(key='Skeleton', base='Undead', looks='male', about='Bones that walk on their own, free of the Lich King.'),
-    dict(key='Naga', base='Undead', looks='noarmor', portrait=('icon', 'achievement_boss_nagazone', 'achievement_boss_nagazone'),
-         about='Serpent people of the deep sea, once night elves of Zin-Azshari.'),
-    dict(key='NorthrendSkeleton', base='Undead', looks='male', about='The bones of Northrend, risen in the cold and left without a master.'),
-    dict(key='LeperTroll', base='Troll', looks='untested', about='Trolls marked by a wasting sickness, and the harder for it.'),
-    dict(key='Troglodyte', base='Dwarf', looks='male', portrait=('icon', 'inv_misc_head_kobold_01', 'inv_misc_head_kobold_01'),
-         about='Cave dwellers of the deep places of the world.'),
-    dict(key='ThinHuman', base='Human', looks='male', about='A lean folk of humans, quick and wiry.'),
-    dict(key='HumanCultist', base='Human', looks='untested', about='Humans who gave themselves to dark powers - and lived to tell of it.'),
+         portrait=('icon', 'achievement_boss_triumvirate_voidbrokenbrute', 'achievement_boss_triumvirate_voidbrokenbrute')),
+    dict(key='Earthen', base='Dwarf', looks='armor'),
+    dict(key='DrakkariTroll', base='Troll', looks='armor'),
+    dict(key='Vrykul', base='Human', looks='male', portrait=('icon', 'inv_misc_head_vrykul', 'inv_misc_head_vrykul')),
+    dict(key='Tuskarr', base='Dwarf', looks='male', portrait=('icon', 'inv_misc_head_tuskarr', 'inv_misc_head_tuskarr')),
+    dict(key='Taunka', base='Tauren', looks='male'),
+    dict(key='ForestTroll', base='Troll', looks='male'),
+    dict(key='IceTroll', base='Troll', looks='male'),
+    dict(key='Skeleton', base='Undead', looks='male'),
+    dict(key='Naga', base='Undead', looks='noarmor', portrait=('icon', 'achievement_boss_nagazone', 'achievement_boss_nagazone')),
+    dict(key='NorthrendSkeleton', base='Undead', looks='male'),
+    dict(key='LeperTroll', base='Troll', looks='untested'),
+    dict(key='Troglodyte', base='Dwarf', looks='male', portrait=('icon', 'inv_misc_head_kobold_01', 'inv_misc_head_kobold_01')),
+    dict(key='ThinHuman', base='Human', looks='male'),
+    dict(key='HumanCultist', base='Human', looks='untested'),
 ]
 
 # Every race the module could have given a number to: those with one of their own in the CoA client below 32 that are
@@ -109,7 +96,7 @@ def bit(race):
 def write_races_json():
     known = {}
     for r in KNOWN:
-        entry = {'base': r['base'], 'looks': r['looks'], 'about': r['about'], 'rating': r.get('rating', ''), 'note': r.get('note', '')}
+        entry = {'base': r['base'], 'looks': r['looks'], 'rating': r.get('rating', ''), 'note': r.get('note', '')}
         if 'virtual' in r:
             entry['virtual'] = r['virtual']
         known[r['key']] = entry
@@ -228,7 +215,7 @@ def write_lua():
                 p[1], p[2], p[3], p[4], p[1], p[2], p[3] + 0.5, p[4] + 0.5)
         else:
             portrait = '{ kind = "icon", male = "Interface\\\\Icons\\\\%s", female = "Interface\\\\Icons\\\\%s" }' % (p[1], p[2])
-        lines.append('\t%s = { portrait = %s,\n\t\tinfo = %s },' % (r['key'], portrait, lua_string(r['about'])))
+        lines.append('\t%s = { portrait = %s },' % (r['key'], portrait))
     lines.append('}')
     lines.append('-- The stock races a race can lean on: name in the settings -> file name of the client.')
     lines.append('local BASE_FILES = { %s }' % ', '.join('%s = "%s"' % (b[1], b[6]) for b in BASES))
