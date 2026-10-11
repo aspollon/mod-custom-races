@@ -53,6 +53,9 @@ CustomRaces.Races = ""
 #    CustomRaces.<race>.MaleDisplay   MaleDisplayId of its row.
 #    CustomRaces.<race>.FemaleDisplay FemaleDisplayId of its row.
 #    CustomRaces.<race>.MaleOnly      1: the client has no female body for it; its characters are men.
+#    CustomRaces.<race>.HelmetPrefix  The helmets it wears, by race prefix: its own when the client has helmet
+#                                     models for it, otherwise those of its base race (Hu, Or, Dw, Ni, Sc, Ta,
+#                                     Gn, Tr, Be, Dr). Only the game client uses it.
 #    CustomRaces.<race>.Base          The stock race it leans on, by name: Human, Orc, Dwarf, NightElf, Undead,
 #                                     Tauren, Gnome, Troll, BloodElf or Draenei. Pick it before players make
 #                                     characters of the race: changed later, they keep their place but may
@@ -69,5 +72,6 @@ CustomRaces.Races = ""
 #    CustomRaces.Goblin.MaleDisplay = 6894
 #    CustomRaces.Goblin.FemaleDisplay = 6895
 #    CustomRaces.Goblin.MaleOnly = 0
+#    CustomRaces.Goblin.HelmetPrefix = "Go"
 #    CustomRaces.Goblin.Base = "Orc"
 #

@@ -83,3 +83,34 @@ index 98db8476..86132ad2 100644
      SkillRaceClassInfoBounds bounds = SkillRaceClassInfoBySkill.equal_range(skill);
      for (SkillRaceClassInfoMap::iterator itr = bounds.first; itr != bounds.second; ++itr)
      {
+diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
+index f832d9ca..7eb7052f 100644
+--- a/src/server/game/Entities/Player/Player.cpp
++++ b/src/server/game/Entities/Player/Player.cpp
+@@ -11272,16 +11272,22 @@ void Player::InitDisplayIds()
+         return;
+     }
+ 
++    // The models of the race table: the races of the game client have display ids above 65535, which PlayerInfo
++    // keeps in 16 bits (mod-custom-races).
++    ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(getRace(true));
++    uint32 const displayMale = raceEntry && raceEntry->model_m ? raceEntry->model_m : info->displayId_m;
++    uint32 const displayFemale = raceEntry && raceEntry->model_f ? raceEntry->model_f : info->displayId_f;
++
+     uint8 gender = getGender();
+     switch (gender)
+     {
+         case GENDER_FEMALE:
+-            SetDisplayId(info->displayId_f);
+-            SetNativeDisplayId(info->displayId_f);
++            SetDisplayId(displayFemale);
++            SetNativeDisplayId(displayFemale);
+             break;
+         case GENDER_MALE:
+-            SetDisplayId(info->displayId_m);
+-            SetNativeDisplayId(info->displayId_m);
++            SetDisplayId(displayMale);
++            SetNativeDisplayId(displayMale);
+             break;
+         default:
+             LOG_ERROR("entities.player", "Invalid gender {} for player", gender);

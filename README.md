@@ -32,6 +32,10 @@ many of them can be on at once. A race switched off keeps its number, so its cha
 up the number (setting it to 0) frees it for another race, and the characters of the race stay their base race for
 good.
 
+**Helmets** are models made for each race. Most races of the client have none of their own and would show a
+placeholder for every helmet; they wear the helmets of their base race instead (`CustomRaces.<race>.HelmetPrefix`,
+which the setup page sets from what the client carries).
+
 **Portraits** on the race choice are round like those of the stock races: an older round portrait of the game (Goblin,
 Worgen), an icon of the game cut round, or the round portrait of its base race.
 
@@ -47,7 +51,8 @@ Each race leans on a stock race, its **base race** (`CustomRaces.<race>.Base`, a
 - **Outfits**: the start outfits of its base race, and in the character creation the showcase of the classes of CoA.
 - **Classes**: the 21 classes of CoA and the nine classic classes of mod-classic-classes - 30, the most the character
   creation takes for a race.
-- **Looks**: its own, from the game client. Races without a female model are male: the character creation offers no
+- **Looks**: its own, from the game client (the core patch lets a character wear a model above number 65535, as
+  most of these races have). Races without a female model are male: the character creation offers no
   female, and the random bots of the race are made men.
 
 The random bots of mod-playerbots are made in the new races too: they take a race from the races the server offers,
