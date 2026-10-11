@@ -2575,50 +2575,6 @@
      ]
     },
     {
-     "file": "DBFilesClient\\ChrRaces.dbc",
-     "setRows": {
-      "match": {
-       "0": {
-        "setting": "CustomRaces.{each}.Id",
-        "conf": "mod_custom_races.conf",
-        "default": 0
-       }
-      },
-      "set": {
-       "6": {
-        "setting": "CustomRaces.{each}.HelmetPrefix",
-        "conf": "mod_custom_races.conf",
-        "default": "",
-        "text": true
-       }
-      }
-     },
-     "forEach": {
-      "conf": "mod_custom_races.conf",
-      "key": "CustomRaces.Races",
-      "default": ""
-     },
-     "when": [
-      {
-       "conf": "mod_custom_races.conf",
-       "key": "CustomRaces.{each}.Id",
-       "default": "",
-       "notIn": [
-        "",
-        "0"
-       ]
-      },
-      {
-       "conf": "mod_custom_races.conf",
-       "key": "CustomRaces.{each}.HelmetPrefix",
-       "default": "",
-       "notIn": [
-        ""
-       ]
-      }
-     ]
-    },
-    {
      "file": "DBFilesClient\\CharBaseInfo.dbc",
      "addRows": {
       "cross": [

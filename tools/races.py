@@ -167,10 +167,6 @@ def client_edits():
         each({'file': 'DBFilesClient\\CharacterCreationClassDetails.dbc',
               'cloneRows': {'match': {'8': bid}, 'set': {'8': race_id}, 'key': [4, 8, 12], 'replace': True}},
              cond('Base', **{'in': [bname]}))
-    # The helmets it wears: a race of the client without helmet models of its own shows a placeholder for each; it
-    # wears those of its base race instead (CustomRaces.<race>.HelmetPrefix, chosen by the setup page).
-    each({'file': 'DBFilesClient\\ChrRaces.dbc', 'setRows': {'match': {'0': race_id}, 'set': {'6': setting('HelmetPrefix', True)}}},
-         cond('HelmetPrefix', notIn=['']))
     # Its classes.
     each({'file': 'DBFilesClient\\CharBaseInfo.dbc', 'addRows': {'cross': [[race_id], CLASSES], 'maxPerRace': 30}})
     # Its looks copied to its new number: skins, faces, hair and beards, in the plain and the HD tables.

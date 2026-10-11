@@ -77,6 +77,7 @@ namespace
         uint32 MaleDisplay = 0, FemaleDisplay = 0;
         uint8 Base = 1;
         bool MaleOnly = false;
+        bool OwnHelmets = true;                          // the client has helmet models for it
     };
 
     constexpr uint32 PLAYABLE_FLAGS = 0xC;
@@ -168,6 +169,7 @@ namespace
             race.MaleDisplay = Number(race.Key, "MaleDisplay");
             race.FemaleDisplay = Number(race.Key, "FemaleDisplay");
             race.MaleOnly = Number(race.Key, "MaleOnly") != 0;
+            race.OwnHelmets = Number(race.Key, "OwnHelmets", 1) != 0;
             race.Base = ParseBase(race);
 
             uint32 const id = Number(race.Key, "Id", race.Source < 32 ? race.Source : 0);
@@ -427,28 +429,55 @@ public:
     }
 };
 
+namespace
+{
+    RaceDef const* ActiveRace(Player const* player)
+    {
+        for (RaceDef const* race : active)
+            if (race->Id == player->getRace(true))
+                return race;
+        return nullptr;
+    }
+
+    /// A race without helmet models of its own would show a placeholder for every helmet: its characters keep their
+    /// helmets hidden - set when they are made and at every login, which covers the random bots of mod-playerbots.
+    /// A player may show the helmet again for the session (Interface options).
+    void HideHelmet(Player* player)
+    {
+        RaceDef const* race = ActiveRace(player);
+        if (race && !race->OwnHelmets)
+            player->SetPlayerFlag(PLAYER_FLAGS_HIDE_HELM);
+    }
+}
+
 /// A race without a female model is male: a woman of it has no body. Players cannot choose female for it in the
 /// character creation; the random bots of mod-playerbots choose a gender at random, so they are made men here.
 class CustomRacesPlayer : public PlayerScript
 {
 public:
-    CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS }) { }
+    CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS, PLAYERHOOK_ON_LOGIN }) { }
 
     bool OnPlayerCreateInitialItems(Player* player, bool& /*handled*/) override
     {
-        if (!player || player->getGender() != GENDER_FEMALE)
+        if (!player)
             return true;
-        for (RaceDef const* race : active)
-            if (race->Id == player->getRace(true) && race->MaleOnly)
-            {
-                player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_MALE);
-                player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_MALE);   // race, class, gender, power
-                player->SetUInt32Value(PLAYER_BYTES, 0);         // skin, face, hair style and colour of a man
-                player->SetByteValue(PLAYER_BYTES_2, 0, 0);      // no beard
-                player->InitDisplayIds();
-                break;
-            }
+        HideHelmet(player);
+        RaceDef const* race = ActiveRace(player);
+        if (race && race->MaleOnly && player->getGender() == GENDER_FEMALE)
+        {
+            player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_MALE);
+            player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_MALE);   // race, class, gender, power
+            player->SetUInt32Value(PLAYER_BYTES, 0);             // skin, face, hair style and colour of a man
+            player->SetByteValue(PLAYER_BYTES_2, 0, 0);          // no beard
+            player->InitDisplayIds();
+        }
         return true;
+    }
+
+    void OnPlayerLogin(Player* player) override
+    {
+        if (player)
+            HideHelmet(player);
     }
 };
 

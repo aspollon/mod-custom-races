@@ -32,9 +32,10 @@ many of them can be on at once. A race switched off keeps its number, so its cha
 up the number (setting it to 0) frees it for another race, and the characters of the race stay their base race for
 good.
 
-**Helmets** are models made for each race. Most races of the client have none of their own and would show a
-placeholder for every helmet; they wear the helmets of their base race instead (`CustomRaces.<race>.HelmetPrefix`,
-which the setup page sets from what the client carries).
+**Helmets** are models made for each race. Most races of the client have none of their own and show a placeholder
+for every helmet, so their characters - players and bots - keep their helmets hidden (set when they are made and at
+every login; `CustomRaces.<race>.OwnHelmets`, which the setup page sets from what the client carries). The showcase of
+the character creation still shows it.
 
 **Portraits** on the race choice are round like those of the stock races: an older round portrait of the game (Goblin,
 Worgen), an icon of the game cut round, or the round portrait of its base race.
