@@ -15,10 +15,12 @@
  */
 
 #include "AscensionRacialAbilities.h"
+#include "RacePool.h"
 #include "Config.h"
 #include "DBCStores.h"
 #include "DatabaseEnv.h"
 #include "Log.h"
+#include "Player.h"
 #include "ObjectMgr.h"
 #include "QuestDef.h"
 #include "ScriptMgr.h"
@@ -27,6 +29,7 @@
 #include "Tokenize.h"
 
 #include <algorithm>
+#include <iterator>
 #include <cctype>
 #include <set>
 #include <string>
@@ -64,22 +67,9 @@ namespace
         { 11, 1629, 7, 0, 4140, "Draenei" },
     };
 
-    /// A race of the client that the module can make playable. Its id is the one of its row in ChrRaces.dbc of the
-    /// Conquest of Azeroth client; races are numbered up to 31 (they are bits of a 32-bit race mask).
-    struct RaceDef
-    {
-        char const* Key;
-        uint8 Id;
-        char const* Name;
-        uint32 MaleDisplay;
-        uint32 FemaleDisplay;
-        uint8 Base;
-    };
-
-    RaceDef const POOL[] =
-    {
-        { "Goblin", 9, "Goblin", 6894, 6895, 2 },
-    };
+    /// The races of the module (src/RacePool.h, written by tools/pool.py).
+    using RaceDef = CustomRacesPool::RaceDef;
+    using CustomRacesPool::POOL;
 
     constexpr uint32 PLAYABLE_FLAGS = 0xC;
     // The values every playable race of the client has: humanoid, Resurrection Sickness, the splash sound.
@@ -128,6 +118,40 @@ namespace
 
     std::vector<RaceDef const*> active;
     uint8 baseOf[32] = {};
+    uint8 idOf[std::size(POOL)] = {};
+
+    /// The number of a race on this realm: its own, or the free number CustomRaces.<race>.Id gave it (0: none).
+    uint8 IdOf(RaceDef const& race) { return idOf[&race - POOL]; }
+
+    /// The numbers of the races, checked: a race without a number of its own needs one of the free numbers, and no
+    /// two races may share one. A race left without a number is off.
+    void ChooseIds()
+    {
+        std::set<uint8> taken;
+        for (RaceDef const& race : POOL)
+            if (race.Id)
+                taken.insert(race.Id);
+        for (RaceDef const& race : POOL)
+        {
+            uint8 id = race.Id;
+            if (!id)
+            {
+                uint32 const wanted = sConfigMgr->GetOption<uint32>(std::string("CustomRaces.") + race.Key + ".Id", 0);
+                if (wanted && std::find(std::begin(CustomRacesPool::SLOTS), std::end(CustomRacesPool::SLOTS), wanted) ==
+                    std::end(CustomRacesPool::SLOTS))
+                    LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which is not one of the free race numbers; the {} "
+                        "stays off", race.Key, wanted, race.Name);
+                else if (wanted && taken.count(uint8(wanted)))
+                    LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which another race has; the {} stays off",
+                        race.Key, wanted, race.Name);
+                else
+                    id = uint8(wanted);
+                if (id)
+                    taken.insert(id);
+            }
+            idOf[&race - POOL] = id;
+        }
+    }
 
     /// The stock race a new race leans on: CustomRaces.<race>.Base, by name, or the race's own default. It decides
     /// the faction, the start, the quests and the racial abilities of the race.
@@ -145,7 +169,7 @@ namespace
         return race.Base;
     }
 
-    uint8 BaseFor(RaceDef const& race) { return race.Id < 32 && baseOf[race.Id] ? baseOf[race.Id] : race.Base; }
+    uint8 BaseFor(RaceDef const& race) { return IdOf(race) && IdOf(race) < 32 && baseOf[IdOf(race)] ? baseOf[IdOf(race)] : race.Base; }
 
     bool IsWanted(std::vector<RaceDef const*> const& wanted, RaceDef const& race)
     {
@@ -157,15 +181,15 @@ namespace
     /// The rows of one race: removed always, written again while the race is on.
     void WriteRace(RaceDef const& race, bool on)
     {
-        uint32 const bit = Bit(race.Id);
-        WorldDatabase.DirectExecute("DELETE FROM `chrraces_dbc` WHERE `ID` = {}", race.Id);
-        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo` WHERE `race` = {}", race.Id);
-        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_action` WHERE `race` = {}", race.Id);
-        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_item` WHERE `race` = {}", race.Id);
-        WorldDatabase.DirectExecute("DELETE FROM `player_race_stats` WHERE `Race` = {}", race.Id);
+        uint32 const bit = Bit(IdOf(race));
+        WorldDatabase.DirectExecute("DELETE FROM `chrraces_dbc` WHERE `ID` = {}", IdOf(race));
+        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo` WHERE `race` = {}", IdOf(race));
+        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_action` WHERE `race` = {}", IdOf(race));
+        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_item` WHERE `race` = {}", IdOf(race));
+        WorldDatabase.DirectExecute("DELETE FROM `player_race_stats` WHERE `Race` = {}", IdOf(race));
         WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_skills` WHERE `raceMask` = {}", bit);
         WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` = {}", bit);
-        WorldDatabase.DirectExecute("DELETE FROM `ascension_custom_class_race` WHERE `race` = {}", race.Id);
+        WorldDatabase.DirectExecute("DELETE FROM `ascension_custom_class_race` WHERE `race` = {}", IdOf(race));
         if (!on)
             return;
 
@@ -181,21 +205,23 @@ namespace
         }
         // A row of the world database overrides the row of the client table with the same id; its empty texts keep
         // those of the client table.
+        // A race with a number of its own on this realm has no row in the client table: its texts come from here.
         WorldDatabase.DirectExecute("INSERT INTO `chrraces_dbc` (`ID`, `Flags`, `FactionID`, `ExplorationSoundID`, `MaleDisplayId`, "
-            "`FemaleDisplayId`, `BaseLanguage`, `CreatureType`, `ResSicknessSpellID`, `SplashSoundID`, `CinematicSequenceID`, "
-            "`Alliance`{}, `Name_Lang_Mask`, `Required_Expansion`) VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, 0, {}{}, 0, 0)",
-            names, race.Id, PLAYABLE_FLAGS, base->FactionTemplate, base->ExplorationSound, race.MaleDisplay, race.FemaleDisplay,
-            base->Language, CREATURE_TYPE_HUMANOID_ID, RESURRECTION_SICKNESS, SPLASH_SOUND, base->Alliance, values);
+            "`FemaleDisplayId`, `ClientPrefix`, `BaseLanguage`, `CreatureType`, `ResSicknessSpellID`, `SplashSoundID`, `ClientFilestring`, "
+            "`CinematicSequenceID`, `Alliance`{}, `Name_Lang_Mask`, `Required_Expansion`) "
+            "VALUES ({}, {}, {}, {}, {}, {}, '{}', {}, {}, {}, {}, '{}', 0, {}{}, 0, 0)",
+            names, IdOf(race), PLAYABLE_FLAGS, base->FactionTemplate, base->ExplorationSound, race.MaleDisplay, race.FemaleDisplay,
+            race.Prefix, base->Language, CREATURE_TYPE_HUMANOID_ID, RESURRECTION_SICKNESS, SPLASH_SOUND, race.File, base->Alliance, values);
         WorldDatabase.DirectExecute("INSERT INTO `playercreateinfo` (`race`, `class`, `map`, `zone`, `position_x`, `position_y`, "
             "`position_z`, `orientation`) SELECT {}, `class`, `map`, `zone`, `position_x`, `position_y`, `position_z`, `orientation` "
-            "FROM `playercreateinfo` WHERE `race` = {}", race.Id, BaseFor(race));
+            "FROM `playercreateinfo` WHERE `race` = {}", IdOf(race), BaseFor(race));
         WorldDatabase.DirectExecute("INSERT INTO `playercreateinfo_action` (`race`, `class`, `button`, `action`, `type`) "
-            "SELECT {}, `class`, `button`, `action`, `type` FROM `playercreateinfo_action` WHERE `race` = {}", race.Id, BaseFor(race));
+            "SELECT {}, `class`, `button`, `action`, `type` FROM `playercreateinfo_action` WHERE `race` = {}", IdOf(race), BaseFor(race));
         WorldDatabase.DirectExecute("INSERT INTO `playercreateinfo_item` (`race`, `class`, `itemid`, `amount`, `Note`) "
-            "SELECT {}, `class`, `itemid`, `amount`, `Note` FROM `playercreateinfo_item` WHERE `race` = {}", race.Id, BaseFor(race));
+            "SELECT {}, `class`, `itemid`, `amount`, `Note` FROM `playercreateinfo_item` WHERE `race` = {}", IdOf(race), BaseFor(race));
         WorldDatabase.DirectExecute("INSERT INTO `player_race_stats` (`Race`, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit`) "
             "SELECT {}, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit` FROM `player_race_stats` WHERE `Race` = {}",
-            race.Id, BaseFor(race));
+            IdOf(race), BaseFor(race));
         WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_skills` (`raceMask`, `classMask`, `skill`, `rank`, `comment`) "
             "SELECT {}, `classMask`, `skill`, `rank`, `comment` FROM `playercreateinfo_skills` WHERE `raceMask` <> 0 AND "
             "(`raceMask` & {}) <> 0", bit, baseBit);
@@ -203,7 +229,7 @@ namespace
             "SELECT {}, `classmask`, `Spell`, `Note` FROM `playercreateinfo_spell_custom` WHERE `racemask` <> 0 AND "
             "(`racemask` & {}) <> 0", bit, baseBit);
         WorldDatabase.DirectExecute("INSERT IGNORE INTO `ascension_custom_class_race` (`class`, `race`) "
-            "SELECT `class`, {} FROM `ascension_custom_class_race` WHERE `race` = {}", race.Id, BaseFor(race));
+            "SELECT `class`, {} FROM `ascension_custom_class_race` WHERE `race` = {}", IdOf(race), BaseFor(race));
     }
 
     // ---------------------------------------------------------------------------------- the characters
@@ -211,35 +237,64 @@ namespace
     /// A character of a race that is off becomes its base race; one whose race is on again gets it back.
     void MoveCharacters(RaceDef const& race, bool on)
     {
-        CharacterDatabase.DirectExecute("CREATE TABLE IF NOT EXISTS `custom_races_moved` ("
-            "`guid` INT UNSIGNED NOT NULL, `race` TINYINT UNSIGNED NOT NULL, `base` TINYINT UNSIGNED NOT NULL, "
-            "`skin` TINYINT UNSIGNED NOT NULL, `face` TINYINT UNSIGNED NOT NULL, `hairStyle` TINYINT UNSIGNED NOT NULL, "
-            "`hairColor` TINYINT UNSIGNED NOT NULL, `facialStyle` TINYINT UNSIGNED NOT NULL, PRIMARY KEY (`guid`)) "
-            "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='mod-custom-races: characters of a race switched off, and their looks'");
+
 
         if (on)
         {
             QueryResult back = CharacterDatabase.Query("SELECT COUNT(*) FROM `custom_races_moved` m JOIN `characters` c ON c.`guid` = m.`guid` "
-                "WHERE m.`race` = {} AND c.`race` = m.`base`", race.Id);
+                "WHERE m.`race` = {} AND c.`race` = m.`base`", IdOf(race));
             CharacterDatabase.DirectExecute("UPDATE `characters` c JOIN `custom_races_moved` m ON c.`guid` = m.`guid` SET c.`race` = m.`race`, "
                 "c.`skin` = m.`skin`, c.`face` = m.`face`, c.`hairStyle` = m.`hairStyle`, c.`hairColor` = m.`hairColor`, "
-                "c.`facialStyle` = m.`facialStyle` WHERE m.`race` = {} AND c.`race` = m.`base`", race.Id);
-            CharacterDatabase.DirectExecute("DELETE FROM `custom_races_moved` WHERE `race` = {}", race.Id);
+                "c.`facialStyle` = m.`facialStyle` WHERE m.`race` = {} AND c.`race` = m.`base`", IdOf(race));
+            CharacterDatabase.DirectExecute("DELETE FROM `custom_races_moved` WHERE `race` = {}", IdOf(race));
             if (back && (*back)[0].Get<uint64>())
                 LOG_INFO("module", "mod-custom-races: {} character(s) are {} again", (*back)[0].Get<uint64>(), race.Name);
             return;
         }
 
-        QueryResult count = CharacterDatabase.Query("SELECT COUNT(*) FROM `characters` WHERE `race` = {}", race.Id);
+        QueryResult count = CharacterDatabase.Query("SELECT COUNT(*) FROM `characters` WHERE `race` = {}", IdOf(race));
         if (!count || !(*count)[0].Get<uint64>())
             return;
         CharacterDatabase.DirectExecute("REPLACE INTO `custom_races_moved` (`guid`, `race`, `base`, `skin`, `face`, `hairStyle`, `hairColor`, "
             "`facialStyle`) SELECT `guid`, `race`, {}, `skin`, `face`, `hairStyle`, `hairColor`, `facialStyle` FROM `characters` "
-            "WHERE `race` = {}", BaseFor(race), race.Id);
+            "WHERE `race` = {}", BaseFor(race), IdOf(race));
         CharacterDatabase.DirectExecute("UPDATE `characters` SET `race` = {}, `skin` = 0, `face` = 0, `hairStyle` = 0, `hairColor` = 0, "
-            "`facialStyle` = 0 WHERE `race` = {}", BaseFor(race), race.Id);
+            "`facialStyle` = 0 WHERE `race` = {}", BaseFor(race), IdOf(race));
         LOG_INFO("module", "mod-custom-races: {} is off; {} character(s) of it play their base race until it is on again",
             race.Name, (*count)[0].Get<uint64>());
+    }
+
+    /// A free number no race has any more: a race was removed from this realm (CustomRaces.<race>.Id set back to 0).
+    /// Its characters stay the base race they had for good, and its rows go.
+    void FreeSlots()
+    {
+        for (uint8 slot : CustomRacesPool::SLOTS)
+        {
+            bool used = false;
+            for (RaceDef const& race : POOL)
+                used |= IdOf(race) == slot;
+            if (used)
+                continue;
+            WorldDatabase.DirectExecute("DELETE FROM `chrraces_dbc` WHERE `ID` = {}", slot);
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo` WHERE `race` = {}", slot);
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_action` WHERE `race` = {}", slot);
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_item` WHERE `race` = {}", slot);
+            WorldDatabase.DirectExecute("DELETE FROM `player_race_stats` WHERE `Race` = {}", slot);
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_skills` WHERE `raceMask` = {}", Bit(slot));
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` = {}", Bit(slot));
+            WorldDatabase.DirectExecute("DELETE FROM `ascension_custom_class_race` WHERE `race` = {}", slot);
+            QueryResult count = CharacterDatabase.Query("SELECT COUNT(*) FROM `characters` c JOIN `custom_races_base` b ON b.`race` = c.`race` "
+                "WHERE c.`race` = {}", slot);
+            if (count && (*count)[0].Get<uint64>())
+            {
+                CharacterDatabase.DirectExecute("UPDATE `characters` c JOIN `custom_races_base` b ON b.`race` = c.`race` SET c.`race` = b.`base`, "
+                    "c.`skin` = 0, c.`face` = 0, c.`hairStyle` = 0, c.`hairColor` = 0, c.`facialStyle` = 0 WHERE c.`race` = {}", slot);
+                LOG_INFO("module", "mod-custom-races: race number {} was given up; its {} character(s) keep their base race",
+                    slot, (*count)[0].Get<uint64>());
+            }
+            CharacterDatabase.DirectExecute("DELETE FROM `custom_races_moved` WHERE `race` = {}", slot);
+            CharacterDatabase.DirectExecute("DELETE FROM `custom_races_base` WHERE `race` = {}", slot);
+        }
     }
 
     // ---------------------------------------------------------------------------------- what the base race lends
@@ -261,7 +316,7 @@ namespace
 
     void LendMasks(RaceDef const& race)
     {
-        uint32 const bit = Bit(race.Id);
+        uint32 const bit = Bit(IdOf(race));
         uint32 const baseBit = Bit(BaseFor(race));
         uint32 quests = 0, items = 0, factions = 0, skills = 0;
 
@@ -295,9 +350,27 @@ public:
     {
         std::vector<RaceDef const*> const wanted = Wanted();
         active.clear();
+        // The base race of each race, for data/sql/remove: removing the module turns their characters into it.
+        CharacterDatabase.DirectExecute("CREATE TABLE IF NOT EXISTS `custom_races_base` (`race` TINYINT UNSIGNED NOT NULL, "
+            "`base` TINYINT UNSIGNED NOT NULL, PRIMARY KEY (`race`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 "
+            "COMMENT='mod-custom-races: the base race of each race'");
+        CharacterDatabase.DirectExecute("CREATE TABLE IF NOT EXISTS `custom_races_moved` ("
+            "`guid` INT UNSIGNED NOT NULL, `race` TINYINT UNSIGNED NOT NULL, `base` TINYINT UNSIGNED NOT NULL, "
+            "`skin` TINYINT UNSIGNED NOT NULL, `face` TINYINT UNSIGNED NOT NULL, `hairStyle` TINYINT UNSIGNED NOT NULL, "
+            "`hairColor` TINYINT UNSIGNED NOT NULL, `facialStyle` TINYINT UNSIGNED NOT NULL, PRIMARY KEY (`guid`)) "
+            "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='mod-custom-races: characters of a race switched off, and their looks'");
+        ChooseIds();
+        FreeSlots();
+        for (RaceDef const& race : POOL)
+            if (!IdOf(race) && IsWanted(wanted, race))
+                LOG_WARN("module", "mod-custom-races: {} is in CustomRaces.Races but has no race number (CustomRaces.{}.Id); it stays off",
+                    race.Name, race.Key);
         for (RaceDef const& race : POOL)
         {
-            baseOf[race.Id] = ChooseBase(race);
+            if (!IdOf(race))
+                continue;                                    // no number on this realm: never on, no rows, no characters
+            baseOf[IdOf(race)] = ChooseBase(race);
+            CharacterDatabase.DirectExecute("REPLACE INTO `custom_races_base` (`race`, `base`) VALUES ({}, {})", IdOf(race), BaseFor(race));
             bool const on = IsWanted(wanted, race) && FindBase(BaseFor(race));
             WriteRace(race, on);
             MoveCharacters(race, on);
@@ -321,14 +394,40 @@ public:
         }
         for (RaceDef const* race : active)
         {
-            AscensionRacialAbilities::BorrowedRacials[race->Id] = BaseFor(*race);
-            SetRaceBase(race->Id, BaseFor(*race));
+            AscensionRacialAbilities::BorrowedRacials[IdOf(*race)] = BaseFor(*race);
+            SetRaceBase(IdOf(*race), BaseFor(*race));
             LendMasks(*race);
         }
+    }
+};
+
+/// A race without a female model is male: a woman of it has no body. Players cannot choose female for it in the
+/// character creation; the random bots of mod-playerbots choose a gender at random, so they are made men here.
+class CustomRacesPlayer : public PlayerScript
+{
+public:
+    CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS }) { }
+
+    bool OnPlayerCreateInitialItems(Player* player, bool& /*handled*/) override
+    {
+        if (!player || player->getGender() != GENDER_FEMALE)
+            return true;
+        for (RaceDef const* race : active)
+            if (IdOf(*race) == player->getRace(true) && race->MaleOnly)
+            {
+                player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_MALE);
+                player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_MALE);   // race, class, gender, power
+                player->SetUInt32Value(PLAYER_BYTES, 0);         // skin, face, hair style and colour of a man
+                player->SetByteValue(PLAYER_BYTES_2, 0, 0);      // no beard
+                player->InitDisplayIds();
+                break;
+            }
+        return true;
     }
 };
 
 void AddSC_custom_races()
 {
     new CustomRacesWorld();
+    new CustomRacesPlayer();
 }
