@@ -87,7 +87,8 @@ namespace
     constexpr uint32 SPLASH_SOUND = 1096;
     constexpr char const* PREFIX = "CustomRaces.";
 
-    constexpr uint32 Bit(uint8 race) { return 1u << (race - 1); }
+    /// The bit of a race in race masks; races above 32 have none (with the core patch, they use the bit of their base race).
+    constexpr uint32 Bit(uint8 race) { return race >= 1 && race <= 32 ? 1u << (race - 1) : 0; }
 
     BaseRace const* FindBase(uint8 id)
     {
@@ -97,8 +98,9 @@ namespace
         return nullptr;
     }
 
-    /// A race number the module may use: 1 to 31 (races are bits of a 32-bit mask), and none of the stock races.
-    bool Usable(uint32 id) { return id >= 1 && id <= 31 && !FindBase(uint8(id)); }
+    /// A race number the module may use: 1 to 63, none of the stock races. Numbers above 31 need the 64-race patch
+    /// of the game client (CustomRaces.MoreRaces); without it the client cannot show them.
+    bool Usable(uint32 id) { return id >= 1 && id <= 63 && !FindBase(uint8(id)); }
 
     std::string Lower(std::string text)
     {
@@ -174,7 +176,7 @@ namespace
 
             uint32 const id = Number(race.Key, "Id", race.Source < 32 ? race.Source : 0);
             if (id && !Usable(id))
-                LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which no new race can have (1 to 31, not a stock race); "
+                LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which no new race can have (1 to 63, not a stock race); "
                     "the {} stays off", race.Key, id, race.Name);
             else if (id && taken.count(uint8(id)))
                 LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which another race has; the {} stays off", race.Key, id, race.Name);
@@ -207,6 +209,9 @@ namespace
             else if (!found->Id)
                 LOG_WARN("module", "mod-custom-races: {} is in CustomRaces.Races but has no race number (CustomRaces.{}.Id); it stays off",
                     found->Name, found->Key);
+            else if (found->Id > 31 && !sConfigMgr->GetOption<bool>("CustomRaces.MoreRaces", false))
+                LOG_WARN("module", "mod-custom-races: {} has race number {}, above 31, but CustomRaces.MoreRaces is off; it stays off",
+                    found->Name, found->Id);
             else if (std::find(wanted.begin(), wanted.end(), found) == wanted.end())
                 wanted.push_back(found);
         }
@@ -222,8 +227,11 @@ namespace
         WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_action` WHERE `race` = {}", id);
         WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_item` WHERE `race` = {}", id);
         WorldDatabase.DirectExecute("DELETE FROM `player_race_stats` WHERE `Race` = {}", id);
-        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_skills` WHERE `raceMask` = {}", Bit(id));
-        WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` = {}", Bit(id));
+        if (Bit(id))                                     // a mask of 0 is every race
+        {
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_skills` WHERE `raceMask` = {}", Bit(id));
+            WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` = {}", Bit(id));
+        }
         WorldDatabase.DirectExecute("DELETE FROM `ascension_custom_class_race` WHERE `race` = {}", id);
     }
 
@@ -262,10 +270,13 @@ namespace
             "SELECT {}, `class`, `itemid`, `amount`, `Note` FROM `playercreateinfo_item` WHERE `race` = {}", race.Id, race.Base);
         WorldDatabase.DirectExecute("INSERT INTO `player_race_stats` (`Race`, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit`) "
             "SELECT {}, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit` FROM `player_race_stats` WHERE `Race` = {}", race.Id, race.Base);
-        WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_skills` (`raceMask`, `classMask`, `skill`, `rank`, `comment`) "
+        // A race above 32 has no bit of its own: the core gives it the skills and spells of its base race's bit.
+        if (bit)
+            WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_skills` (`raceMask`, `classMask`, `skill`, `rank`, `comment`) "
             "SELECT {}, `classMask`, `skill`, `rank`, `comment` FROM `playercreateinfo_skills` WHERE `raceMask` <> 0 AND "
             "(`raceMask` & {}) <> 0", bit, baseBit);
-        WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_spell_custom` (`racemask`, `classmask`, `Spell`, `Note`) "
+        if (bit)
+            WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_spell_custom` (`racemask`, `classmask`, `Spell`, `Note`) "
             "SELECT {}, `classmask`, `Spell`, `Note` FROM `playercreateinfo_spell_custom` WHERE `racemask` <> 0 AND "
             "(`racemask` & {}) <> 0", bit, baseBit);
         WorldDatabase.DirectExecute("INSERT IGNORE INTO `ascension_custom_class_race` (`class`, `race`) "
@@ -306,7 +317,7 @@ namespace
     /// characters stay the base race they had for good, and its rows go.
     void FreeNumbers()
     {
-        for (uint8 id = 1; id < 32; ++id)
+        for (uint8 id = 1; id < 64; ++id)
         {
             if (!Usable(id))
                 continue;
@@ -352,6 +363,11 @@ namespace
         uint32 const bit = Bit(race.Id);
         uint32 const baseBit = Bit(race.Base);
         uint32 quests = 0, items = 0, factions = 0, skills = 0;
+        if (!bit)
+        {
+            LOG_INFO("module", "mod-custom-races: {} ({}) plays as its base race does: the core gives it its base race's mask", race.Name, race.Id);
+            return;
+        }
 
         for (auto const& [id, quest] : sObjectMgr->GetQuestTemplates())
             if (quest && Lend(QuestRaces::Of(quest), baseBit, bit))
@@ -405,6 +421,12 @@ public:
             if (on)
                 active.push_back(&race);
         }
+
+        // A race above 32 has the mask of its base race from the start: the core reads the races, their skills and
+        // spells right after this.
+        for (RaceDef const* race : active)
+            if (race->Id > 32)
+                SetRaceBase(race->Id, race->Base);
 
         std::string names;
         for (RaceDef const* race : active)

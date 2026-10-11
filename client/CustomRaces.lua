@@ -43,7 +43,7 @@ if not CharCreateRaceButtonsFrame or not CharCreateRaceButtonMixin or not Charac
 	return
 end
 
-local BUTTONS = 32
+local BUTTONS = 64                 -- race buttons: with the 64-race patch the client lists up to 63 races
 local ROUND = "Interface\\Glues\\CharacterCreate\\UI-CHARACTERCREATE-RACES_Round"
 local OLDROUND = "Interface\\Glues\\CharacterCreate\\UI-CHARACTERCREATE-RACESROUND"
 

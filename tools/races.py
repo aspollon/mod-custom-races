@@ -195,6 +195,11 @@ def write_manifest():
         'patch': {
             'files': [{'from': 'client/CustomRaces.lua', 'to': 'Interface\\GlueXML\\CustomRaces.lua', 'fill': client_fills()}],
             'edits': client_edits(),
+            # The 64-race patch of the game client (race numbers above 31): a DLL of the user's own, from CoA Custom,
+            # which AFK Realm puts next to Ascension.exe while CustomRaces.MoreRaces is on.
+            'rootFiles': [{'to': 'dinput8.dll',
+                           'from': {'setting': 'CustomRaces.MoreRacesFile', 'conf': CONF, 'default': '', 'text': True},
+                           'when': [{'conf': CONF, 'key': 'CustomRaces.MoreRaces', 'is': '1', 'default': '0'}]}],
         },
         'why': 'The race choice of the character creation shows the races chosen on the setup page (CustomRaces.Races), '
                'each with the faction of its base race: the game client already carries their models, skins and hair, '
@@ -237,7 +242,8 @@ def write_lua():
 # ------------------------------------------------------------------------------------------------- removing
 
 def write_remove_sql():
-    ids = sorted(set(OWN) | set(SLOTS))
+    # and the numbers above 31 (with the 64-race patch of the game client); those have no bit of their own
+    ids = sorted(set(OWN) | set(SLOTS) | set(range(32, 64)))
     world = '''-- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/races.py.
 -- The module writes the rows of its races at every start, and removes those of the races that are off; these are the
 -- rows of every race number it could have used, by race id and race mask.
@@ -249,7 +255,7 @@ DELETE FROM `player_race_stats` WHERE `Race` IN (%(ids)s);
 DELETE FROM `playercreateinfo_skills` WHERE `raceMask` IN (%(masks)s);
 DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` IN (%(masks)s);
 DELETE FROM `ascension_custom_class_race` WHERE `race` IN (%(ids)s);
-''' % dict(ids=', '.join(map(str, ids)), masks=', '.join(str(bit(i)) for i in ids))
+''' % dict(ids=', '.join(map(str, ids)), masks=', '.join(str(bit(i)) for i in ids if i <= 32))
     chars = '''-- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/races.py.
 -- Characters of its races play a stock race from now on: the base race the module gave them (kept in
 -- `custom_races_base` while it ran, by the number each race had). Their race and looks are kept aside in

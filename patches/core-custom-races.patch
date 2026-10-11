@@ -11,8 +11,21 @@ index 839fe9c6..51b22e8c 100644
              for (SkillLineAbilityEntry const* ability : GetSkillLineAbilitiesBySkillLine(skill.SkillId))
                  if (AscensionRacialAbilities::CanLearn(*ability, player->getRace(), player->getClass()))
                      spells.push_back(ability->Spell);
+diff --git a/src/server/coa/AscensionFreshCharacterCheck.cpp b/src/server/coa/AscensionFreshCharacterCheck.cpp
+index e1bf8130..7cbfb8bf 100644
+--- a/src/server/coa/AscensionFreshCharacterCheck.cpp
++++ b/src/server/coa/AscensionFreshCharacterCheck.cpp
+@@ -246,7 +246,7 @@ Preflight CheckPassiveClosure(AscensionFreshCharacterExpectations::Case const& e
+                 if (ability->AcquireMethod != SKILL_LINE_ABILITY_LEARNED_ON_SKILL_LEARN &&
+                     ability->AcquireMethod != SKILL_LINE_ABILITY_LEARNED_ON_SKILL_VALUE)
+                     continue;
+-                if (ability->RaceMask && !(ability->RaceMask & (1u << (expected.RaceId - 1))))
++                if (ability->RaceMask && !(ability->RaceMask & RaceMaskOf(expected.RaceId)))
+                     continue;
+                 if (ability->ClassMask && !(ability->ClassMask & (1u << (expected.ClassId - 1))))
+                     continue;
 diff --git a/src/server/coa/AscensionRacialAbilities.h b/src/server/coa/AscensionRacialAbilities.h
-index a59ccc5d..62a8fbc3 100644
+index a59ccc5d..8146edeb 100644
 --- a/src/server/coa/AscensionRacialAbilities.h
 +++ b/src/server/coa/AscensionRacialAbilities.h
 @@ -87,6 +87,14 @@ inline constexpr std::array<RacialSkill, 12> Skills =
@@ -20,7 +33,7 @@ index a59ccc5d..62a8fbc3 100644
  }};
  
 +// A race a module made playable that uses the racial abilities of another race (0: none of its own).
-+inline std::array<uint8, 32> BorrowedRacials = {};
++inline std::array<uint8, 64> BorrowedRacials = {};
 +
 +inline uint8 RacialRace(uint8 raceId)
 +{
@@ -38,8 +51,30 @@ index a59ccc5d..62a8fbc3 100644
      if (!raceId || GetRace(ability.SkillLine) != raceId || !IsAscensionClass(classId))
          return false;
  
+diff --git a/src/server/game/Achievements/AchievementMgr.cpp b/src/server/game/Achievements/AchievementMgr.cpp
+index c894de7e..39f5bfd5 100644
+--- a/src/server/game/Achievements/AchievementMgr.cpp
++++ b/src/server/game/Achievements/AchievementMgr.cpp
+@@ -118,7 +118,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
+                                  criteria->ID, criteria->requiredType, dataType, classRace.class_id);
+                 return false;
+             }
+-            if (classRace.race_id && ((1 << (classRace.race_id - 1)) & sRaceMgr->GetPlayableRaceMask()) == 0)
++            if (classRace.race_id && (RaceMaskOf(classRace.race_id) & sRaceMgr->GetPlayableRaceMask()) == 0)
+             {
+                 LOG_ERROR("sql.sql", "Table `achievement_criteria_data` (Entry: {} Type: {}) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_CLASS_RACE ({}) has non-existing race in value2 ({}), ignored.",
+                                  criteria->ID, criteria->requiredType, dataType, classRace.race_id);
+@@ -278,7 +278,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
+                                  criteria->ID, criteria->requiredType, dataType, classRace.class_id);
+                 return false;
+             }
+-            if (classRace.race_id && ((1 << (classRace.race_id - 1)) & sRaceMgr->GetPlayableRaceMask()) == 0)
++            if (classRace.race_id && (RaceMaskOf(classRace.race_id) & sRaceMgr->GetPlayableRaceMask()) == 0)
+             {
+                 LOG_ERROR("sql.sql", "Table `achievement_criteria_data` (Entry: {} Type: {}) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_S_PLAYER_CLASS_RACE ({}) has non-existing race in value2 ({}), ignored.",
+                                  criteria->ID, criteria->requiredType, dataType, classRace.race_id);
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index 98db8476..86132ad2 100644
+index 98db8476..fdca2492 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
 @@ -25,6 +25,7 @@
@@ -50,7 +85,16 @@ index 98db8476..86132ad2 100644
  #include "TransportMgr.h"
  #include "World.h"
  #include <algorithm>
-@@ -936,8 +937,23 @@ uint32 GetLiquidFlags(uint32 liquidType)
+@@ -431,7 +432,7 @@ void LoadDBCStores(std::string const& dataPath)
+         sCharStartOutfitMap[outfit->Race | (outfit->Class << 8) | (outfit->Gender << 16)] = outfit;
+ 
+     for (CharSectionsEntry const* charSection : sCharSectionsStore)
+-        if (charSection->Race && ((1 << (charSection->Race - 1)) & sRaceMgr->GetPlayableRaceMask()) != 0) //ignore Nonplayable races
++        if (charSection->Race && (RaceMaskOf(charSection->Race) & sRaceMgr->GetPlayableRaceMask()) != 0) //ignore Nonplayable races
+             sCharSectionMap.insert({ charSection->GenType | (charSection->Gender << 8) | (charSection->Race << 16), charSection });
+ 
+     std::vector<FactionEntry*> factions;
+@@ -936,8 +937,32 @@ uint32 GetLiquidFlags(uint32 liquidType)
      return 0;
  }
  
@@ -59,12 +103,21 @@ index 98db8476..86132ad2 100644
 +// the build stays short.
 +void SetRaceBase(uint8 race, uint8 base);
 +
-+static std::array<uint8, 32> sRaceBase = {};
++static std::array<uint8, 64> sRaceBase = {};
 +
 +void SetRaceBase(uint8 race, uint8 base)
 +{
 +    if (race < sRaceBase.size())
 +        sRaceBase[race] = base;
++}
++
++uint32 RaceMaskOf(uint8 race)
++{
++    if (race >= 1 && race <= 32)
++        return uint32(1) << (race - 1);
++    if (race < sRaceBase.size() && sRaceBase[race] >= 1 && sRaceBase[race] <= 32)
++        return uint32(1) << (sRaceBase[race] - 1);
++    return 0;
 +}
 +
  CharStartOutfitEntry const* GetCharStartOutfitEntry(uint8 race, uint8 class_, uint8 gender)
@@ -74,7 +127,7 @@ index 98db8476..86132ad2 100644
      std::map<uint32, CharStartOutfitEntry const*>::const_iterator itr = sCharStartOutfitMap.find(race | (class_ << 8) | (gender << 16));
      if (itr == sCharStartOutfitMap.end())
          return nullptr;
-@@ -1003,6 +1019,8 @@ uint32 GetDefaultMapLight(uint32 mapId)
+@@ -1003,10 +1028,12 @@ uint32 GetDefaultMapLight(uint32 mapId)
  
  SkillRaceClassInfoEntry const* GetSkillRaceClassInfo(uint32 skill, uint8 race, uint8 class_)
  {
@@ -83,6 +136,11 @@ index 98db8476..86132ad2 100644
      SkillRaceClassInfoBounds bounds = SkillRaceClassInfoBySkill.equal_range(skill);
      for (SkillRaceClassInfoMap::iterator itr = bounds.first; itr != bounds.second; ++itr)
      {
+-        if (itr->second->RaceMask && !(itr->second->RaceMask & (1 << (race - 1))))
++        if (itr->second->RaceMask && !(itr->second->RaceMask & RaceMaskOf(race)))
+         {
+             continue;
+         }
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
 index f832d9ca..7eb7052f 100644
 --- a/src/server/game/Entities/Player/Player.cpp
@@ -114,3 +172,111 @@ index f832d9ca..7eb7052f 100644
              break;
          default:
              LOG_ERROR("entities.player", "Invalid gender {} for player", gender);
+diff --git a/src/server/game/Entities/Player/RaceMgr.cpp b/src/server/game/Entities/Player/RaceMgr.cpp
+index b1ac288c..e136e607 100644
+--- a/src/server/game/Entities/Player/RaceMgr.cpp
++++ b/src/server/game/Entities/Player/RaceMgr.cpp
+@@ -65,7 +65,7 @@ void RaceMgr::LoadRaces()
+         if (GetMaxRaces() <= raceId)
+             SetMaxRaces(raceId + 1);
+ 
+-        uint32 raceBit = (1 << (raceId - 1));
++        uint32 raceBit = RaceMaskOf(raceId);
+ 
+         _playableRaceMask |= raceBit;
+ 
+diff --git a/src/server/game/Entities/Unit/Unit.h b/src/server/game/Entities/Unit/Unit.h
+index 0eaafa4d..3b24d578 100644
+--- a/src/server/game/Entities/Unit/Unit.h
++++ b/src/server/game/Entities/Unit/Unit.h
+@@ -663,6 +663,10 @@ SpeedOpcodePair SetSpeed2Opc_table[MAX_MOVE_TYPE] =
+     {SMSG_FORCE_PITCH_RATE_CHANGE,        SMSG_SPLINE_SET_PITCH_RATE,           MSG_MOVE_SET_PITCH_RATE},
+ };
+ 
++// The bit of a race in race masks (mod-custom-races): races above 32 have no bit of their own and use the bit of the
++// stock race they lean on (none: 0). Defined in DBCStores.cpp.
++uint32 RaceMaskOf(uint8 race);
++
+ class Unit : public WorldObject
+ {
+ public:
+@@ -838,7 +842,7 @@ public:
+     // Race methods
+     [[nodiscard]] uint8 getRace(bool original = false) const;
+     void setRace(uint8 race);
+-    [[nodiscard]] uint32 getRaceMask() const { return 1 << (getRace(true) - 1); }
++    [[nodiscard]] uint32 getRaceMask() const { return RaceMaskOf(getRace(true)); }
+     [[nodiscard]] DisplayRace GetDisplayRaceFromModelId(uint32 modelId) const;
+     [[nodiscard]] DisplayRace GetDisplayRace() const { return GetDisplayRaceFromModelId(GetDisplayId()); };
+ 
+diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
+index 05aa2c41..c5b6835f 100644
+--- a/src/server/game/Globals/ObjectMgr.cpp
++++ b/src/server/game/Globals/ObjectMgr.cpp
+@@ -4626,7 +4626,7 @@ void ObjectMgr::LoadPlayerInfo()
+ 
+                 for (uint32 raceIndex = RACE_HUMAN; raceIndex < sRaceMgr->GetMaxRaces(); ++raceIndex)
+                 {
+-                    if (raceMask == 0 || ((1 << (raceIndex - 1)) & raceMask))
++                    if (raceMask == 0 || (RaceMaskOf(raceIndex) & raceMask))
+                     {
+                         for (uint32 classIndex = CLASS_WARRIOR; classIndex < MAX_CLASSES; ++classIndex)
+                         {
+@@ -4687,7 +4687,7 @@ void ObjectMgr::LoadPlayerInfo()
+ 
+                 for (uint32 raceIndex = RACE_HUMAN; raceIndex < sRaceMgr->GetMaxRaces(); ++raceIndex)
+                 {
+-                    if (raceMask == 0 || ((1 << (raceIndex - 1)) & raceMask))
++                    if (raceMask == 0 || (RaceMaskOf(raceIndex) & raceMask))
+                     {
+                         for (uint32 classIndex = CLASS_WARRIOR; classIndex < MAX_CLASSES; ++classIndex)
+                         {
+@@ -4745,7 +4745,7 @@ void ObjectMgr::LoadPlayerInfo()
+ 
+                 for (uint32 raceIndex = RACE_HUMAN; raceIndex < sRaceMgr->GetMaxRaces(); ++raceIndex)
+                 {
+-                    if (raceMask == 0 || ((1 << (raceIndex - 1)) & raceMask))
++                    if (raceMask == 0 || (RaceMaskOf(raceIndex) & raceMask))
+                     {
+                         for (uint32 classIndex = CLASS_WARRIOR; classIndex < MAX_CLASSES; ++classIndex)
+                         {
+@@ -9825,7 +9825,7 @@ int32 ObjectMgr::GetBaseReputationOf(FactionEntry const* factionEntry, uint8 rac
+     if (!factionEntry)
+         return 0;
+ 
+-    uint32 raceMask = (1 << (race - 1));
++    uint32 raceMask = RaceMaskOf(race);
+     uint32 classMask = (uint32(1) << (playerClass - 1));
+ 
+     for (int i = 0; i < 4; i++)
+diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
+index c8c7879e..89c72826 100644
+--- a/src/server/game/Handlers/CharacterHandler.cpp
++++ b/src/server/game/Handlers/CharacterHandler.cpp
+@@ -335,7 +335,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recvData)
+     if (!HasPermission(rbac::RBAC_PERM_SKIP_CHECK_CHARACTER_CREATION_RACEMASK))
+     {
+         uint32 raceMaskDisabled = sWorld->getIntConfig(CONFIG_CHARACTER_CREATING_DISABLED_RACEMASK);
+-        if ((1 << (createInfo->Race - 1)) & raceMaskDisabled)
++        if (RaceMaskOf(createInfo->Race) & raceMaskDisabled)
+         {
+             SendCharCreate(CHAR_CREATE_DISABLED);
+             return;
+@@ -2117,7 +2117,7 @@ void WorldSession::HandleCharFactionOrRaceChangeCallback(std::shared_ptr<Charact
+ 
+         for (uint8 i = 0; i < 2; ++i) // check both neutral and faction-specific AH
+         {
+-            AuctionHouseObject* auctionHouse = sAuctionMgr->GetAuctionsMap(i == 0 ? 0 : (((1 << (playerData->Race - 1)) & sRaceMgr->GetAllianceRaceMask()) ? 12 : 29));
++            AuctionHouseObject* auctionHouse = sAuctionMgr->GetAuctionsMap(i == 0 ? 0 : ((RaceMaskOf(playerData->Race) & sRaceMgr->GetAllianceRaceMask()) ? 12 : 29));
+ 
+             for (auto const& [auID, Aentry] : auctionHouse->GetAuctions())
+             {
+@@ -2166,7 +2166,7 @@ void WorldSession::HandleCharFactionOrRaceChangeCallback(std::shared_ptr<Charact
+     if (!HasPermission(rbac::RBAC_PERM_SKIP_CHECK_CHARACTER_CREATION_RACEMASK))
+     {
+         uint32 raceMaskDisabled = sWorld->getIntConfig(CONFIG_CHARACTER_CREATING_DISABLED_RACEMASK);
+-        if ((1 << (factionChangeInfo->Race - 1)) & raceMaskDisabled)
++        if (RaceMaskOf(factionChangeInfo->Race) & raceMaskDisabled)
+         {
+             SendCharFactionChange(CHAR_CREATE_ERROR, factionChangeInfo.get());
+             return;

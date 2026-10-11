@@ -42,7 +42,14 @@ Dark Iron Dwarf, Lightforged, Nightborne and more). Gathered into a race folder 
 `race.json` and its models and textures in `files\` - AFK Realm offers them on the setup page next to the races of
 the client (`CustomRaces.ImportFolder`, `CustomRaces.<race>.Import = 1`). Their rows go into the client patch, their
 files into an archive of their own for each race (`Data\patch-ZY<number>.MPQ`). The module ships none of these
-files: the race folder is the player's own.
+files: the race folder is the player's own. AFK Realm makes it from any client the player has ("Create race packs from
+a client"), so the big clients can go afterwards.
+
+**More than 31 races.** The game client knows race numbers up to 31. With a 64-race patch of the client (the
+`dinput8.dll` of CoA Custom, based on wxl-races-patcher by Dokman, from the original module by Furioz420) it knows up
+to 63: `CustomRaces.MoreRaces = 1` and `CustomRaces.MoreRacesFile`. AFK Realm puts the DLL next to `Ascension.exe`
+while this is on; the module ships no DLL. Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
+of its base race (`RaceMaskOf`): it may do what its base race may do. Without MoreRaces a race above 31 stays off.
 
 **The character creation of the Ascension client** needs rules for the skins, faces, hair and underwear of every
 added race, or it crashes or paints wrong textures: every row playable, a face and an underwear for every skin colour,

@@ -38,10 +38,30 @@ CustomRaces.Enable = 1
 CustomRaces.Races = ""
 
 #
+#    CustomRaces.MoreRaces
+#        Description: Race numbers above 31 (up to 63), for more than the 31 races the game client knows. Needs the
+#                     64-race patch of the game client (dinput8.dll next to Ascension.exe; CoA Custom ships one) in the
+#                     game of every player, and the core change of this module. AFK Realm puts the DLL of
+#                     CustomRaces.MoreRacesFile next to the game while this is on (Modules > Game client > Install) and
+#                     into the ZIP for the other players. A race above 32 has no bit of its own in race masks: it does
+#                     what its base race may do (quests, items, skills).
+#        Default:     0 - Off
+#                     1 - On
+#
+#    CustomRaces.MoreRacesFile
+#        Description: The 64-race patch (dinput8.dll) to put next to the game. AFK Realm keeps it in the race
+#                     folder (_Client\dinput8.dll) when it makes race packs from CoA Custom.
+#        Default:     ""
+#
+
+CustomRaces.MoreRaces = 0
+CustomRaces.MoreRacesFile = ""
+
+#
 #    The options of each race, <race> being its key. The setup page of AFK Realm writes them from the game client.
 #
 #    CustomRaces.<race>.Source        The race's row in ChrRaces.dbc of the client: where its looks come from.
-#    CustomRaces.<race>.Id            Its race number on this realm, 1 to 31 (races are bits of a 32-bit mask):
+#    CustomRaces.<race>.Id            Its race number on this realm, 1 to 31, or up to 63 with CustomRaces.MoreRaces:
 #                                     its row's own number when that is below 32, otherwise a free number (one
 #                                     no row of ChrRaces.dbc has; 14, 15, 17, 18, 21-31 in the CoA client). It
 #                                     keeps it while switched off, so its characters get their race back; 0 gives
