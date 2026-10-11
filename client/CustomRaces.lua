@@ -142,6 +142,9 @@ local function Portrait(self, race, gender)
 		return
 	end
 	local p = race.portrait or {}
+	if race.icon and race.icon ~= "" then
+		p = { kind = "icon", male = race.icon, female = race.icon }
+	end
 	local textures = { self:GetNormalTexture(), self:GetPushedTexture() }
 	if p.kind == "icon" and SetPortraitToTexture then
 		local file = gender == "FEMALE" and p.female or p.male
@@ -199,36 +202,40 @@ for i = 1, BUTTONS do
 	button.SetRace = SetRace
 end
 
--- Alliance on the left, Horde on the right. A faction with more races than fit below each other gets more columns,
--- towards the middle, and the rows come closer together.
+-- Alliance on the left, Horde on the right. The stock races keep one column at the edge; the added races get columns
+-- of their own next to it, towards the middle, from the top - not below the stock races, where buttons and tooltips
+-- of the character creation are.
 local function Layout(count)
-	local sides = { Alliance = {}, Horde = {} }
+	local sides = { Alliance = { stock = {}, added = {} }, Horde = { stock = {}, added = {} } }
 	for i = 1, count do
 		local _, faction = GetFactionForRace(i)
 		if faction ~= "Horde" then
 			faction = "Alliance"
 		end
-		table.insert(sides[faction], i)
+		table.insert(listed[i] and sides[faction].added or sides[faction].stock, i)
 	end
 	local size = CharCreateRaceButton1 and CharCreateRaceButton1:GetHeight() or 52
 	local room = math.max(300, (CharCreateRaceButtonsFrame:GetHeight() or 620) - 120)
-	for faction, list in pairs(sides) do
-		local n = #list
-		local fit = math.max(1, math.floor((room + 12) / (size + 12)))
-		local columns = math.max(1, math.ceil(n / fit))
-		local rows = math.ceil(n / columns)
-		local gap = rows > 1 and math.min(30, math.floor((room - rows * size) / (rows - 1))) or 30
-		for k, i in ipairs(list) do
-			local button = _G["CharCreateRaceButton" .. i]
-			local column, row = math.floor((k - 1) / rows), (k - 1) % rows
-			button:ClearAllPoints()
-			if faction == "Alliance" then
-				button:SetPoint("TOPLEFT", CharCreateRaceButtonsFrame, "TOPLEFT", 32 + column * 170, -75 - row * (size + gap))
-			else
-				button:SetPoint("TOPRIGHT", CharCreateRaceButtonsFrame, "TOPRIGHT", -32 - column * 170, -75 - row * (size + gap))
-			end
-			button:SetFaction(faction)
-			button:Show()
+	local fit = math.max(1, math.floor((room + 8) / (size + 8)))
+	local function place(button, faction, column, row, gap)
+		button:ClearAllPoints()
+		if faction == "Alliance" then
+			button:SetPoint("TOPLEFT", CharCreateRaceButtonsFrame, "TOPLEFT", 32 + column * (size + 18), -75 - row * (size + gap))
+		else
+			button:SetPoint("TOPRIGHT", CharCreateRaceButtonsFrame, "TOPRIGHT", -32 - column * (size + 18), -75 - row * (size + gap))
+		end
+		button:SetFaction(faction)
+		button:Show()
+	end
+	for faction, side in pairs(sides) do
+		local n = #side.stock
+		local gap = n > 1 and math.min(30, math.floor((room - n * size) / (n - 1))) or 30
+		for k, i in ipairs(side.stock) do
+			place(_G["CharCreateRaceButton" .. i], faction, 0, k - 1, gap)
+		end
+		local first = n > 0 and 1 or 0
+		for k, i in ipairs(side.added) do
+			place(_G["CharCreateRaceButton" .. i], faction, first + math.floor((k - 1) / fit), (k - 1) % fit, 8)
 		end
 	end
 end

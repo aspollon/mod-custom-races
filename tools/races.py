@@ -139,7 +139,7 @@ def client_edits():
         values = {'1': 12, '2': faction, '3': sound, '7': lang, '13': side}
         # A race with a row of its own: playable for the faction of its base race.
         each({'file': 'DBFilesClient\\ChrRaces.dbc', 'setRows': {'match': {'0': source}, 'set': values}},
-             cond('Copy', **{'is': '0'}), cond('Base', **{'in': [bname]}))
+             cond('Copy', **{'is': '0'}), cond('Import', notIn=['1']), cond('Base', **{'in': [bname]}))
         # A race with a new number: the row of its looks copied there, under its own name.
         copied = dict(values)
         copied.update({'0': race_id, '14': setting('Name', True), '31': setting('Name', True), '48': setting('Name', True)})
@@ -154,6 +154,13 @@ def client_edits():
         each({'file': 'DBFilesClient\\CharacterCreationClassDetails.dbc',
               'cloneRows': {'match': {'8': bid}, 'set': {'8': race_id}, 'key': [4, 8, 12], 'replace': True}},
              cond('Base', **{'in': [bname]}))
+    # A race from another client (CustomRaces.<race>.Import = 1): its rows from the race folder, its files in an archive
+    # of their own (AFK Realm, RaceImport).
+    each({'file': 'DBFilesClient\\ChrRaces.dbc', 'importRace': {'folder': {'setting': 'CustomRaces.ImportFolder', 'conf': CONF, 'default': '', 'text': True},
+          'key': '{each}', 'id': race_id, 'base': setting('Base', True), 'name': setting('Name', True)}}, cond('Import', **{'is': '1'}))
+    # Its icon, from the race folder (_Icons), when the setup page found one.
+    each({'file': 'Interface\\Icons\\CoA_Race_{each}.blp', 'addFile': {'from': {'setting': 'CustomRaces.{each}.IconFile', 'conf': CONF, 'default': '', 'text': True}}},
+         cond('IconFile', notIn=['']))
     # Its classes.
     each({'file': 'DBFilesClient\\CharBaseInfo.dbc', 'addRows': {'cross': [[race_id], CLASSES], 'maxPerRace': 30}})
     # Its looks copied to its new number: skins, faces, hair and beards, in the plain and the HD tables.
@@ -168,12 +175,15 @@ def client_edits():
         elif new_row_id:
             spec['newId'] = True
         each({'file': 'DBFilesClient\\%s.dbc' % table, 'copyRows': spec}, cond('Copy', **{'is': '1'}))
+    # The rules of the character creation for the rows of every added race (AFK Realm, RaceImport.SectionRules): last.
+    each({'file': 'DBFilesClient\\CharSections.dbc', 'sectionRules': {'race': race_id, 'maleOnly': setting('MaleOnly')}})
     return edits
 
 
 def client_fills():
     line = ('RACES[#RACES + 1] = { key = "{each}", name = "{conf:CustomRaces.{each}.Name}", file = "{conf:CustomRaces.{each}.File}", '
-            'base = "{conf:CustomRaces.{each}.Base}", maleOnly = "{conf:CustomRaces.{each}.MaleOnly}" == "1" } -- @RACES@')
+            'base = "{conf:CustomRaces.{each}.Base}", maleOnly = "{conf:CustomRaces.{each}.MaleOnly}" == "1", '
+            'icon = "{conf:CustomRaces.{each}.Icon}" } -- @RACES@')
     return [{'marker': '@RACES@', 'forEach': EACH, 'line': line}]
 
 

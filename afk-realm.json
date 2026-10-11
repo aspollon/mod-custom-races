@@ -23,7 +23,7 @@
         "key": "CustomRaces.Races",
         "default": ""
        },
-       "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\" } -- @RACES@"
+       "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\", icon = \"{conf:CustomRaces.{each}.Icon}\" } -- @RACES@"
       }
      ]
     }
@@ -72,6 +72,14 @@
        "key": "CustomRaces.{each}.Copy",
        "default": "",
        "is": "0"
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
       },
       {
        "conf": "mod_custom_races.conf",
@@ -329,6 +337,14 @@
       },
       {
        "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
        "key": "CustomRaces.{each}.Base",
        "default": "",
        "in": [
@@ -580,6 +596,14 @@
        "key": "CustomRaces.{each}.Copy",
        "default": "",
        "is": "0"
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
       },
       {
        "conf": "mod_custom_races.conf",
@@ -837,6 +861,14 @@
       },
       {
        "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
        "key": "CustomRaces.{each}.Base",
        "default": "",
        "in": [
@@ -1088,6 +1120,14 @@
        "key": "CustomRaces.{each}.Copy",
        "default": "",
        "is": "0"
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
       },
       {
        "conf": "mod_custom_races.conf",
@@ -1345,6 +1385,14 @@
       },
       {
        "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
        "key": "CustomRaces.{each}.Base",
        "default": "",
        "in": [
@@ -1596,6 +1644,14 @@
        "key": "CustomRaces.{each}.Copy",
        "default": "",
        "is": "0"
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
       },
       {
        "conf": "mod_custom_races.conf",
@@ -1853,6 +1909,14 @@
       },
       {
        "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
        "key": "CustomRaces.{each}.Base",
        "default": "",
        "in": [
@@ -2104,6 +2168,14 @@
        "key": "CustomRaces.{each}.Copy",
        "default": "",
        "is": "0"
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
       },
       {
        "conf": "mod_custom_races.conf",
@@ -2361,6 +2433,14 @@
       },
       {
        "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "notIn": [
+        "1"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
        "key": "CustomRaces.{each}.Base",
        "default": "",
        "in": [
@@ -2570,6 +2650,92 @@
        "default": "",
        "in": [
         "Draenei"
+       ]
+      }
+     ]
+    },
+    {
+     "file": "DBFilesClient\\ChrRaces.dbc",
+     "importRace": {
+      "folder": {
+       "setting": "CustomRaces.ImportFolder",
+       "conf": "mod_custom_races.conf",
+       "default": "",
+       "text": true
+      },
+      "key": "{each}",
+      "id": {
+       "setting": "CustomRaces.{each}.Id",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      },
+      "base": {
+       "setting": "CustomRaces.{each}.Base",
+       "conf": "mod_custom_races.conf",
+       "default": "",
+       "text": true
+      },
+      "name": {
+       "setting": "CustomRaces.{each}.Name",
+       "conf": "mod_custom_races.conf",
+       "default": "",
+       "text": true
+      }
+     },
+     "forEach": {
+      "conf": "mod_custom_races.conf",
+      "key": "CustomRaces.Races",
+      "default": ""
+     },
+     "when": [
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Id",
+       "default": "",
+       "notIn": [
+        "",
+        "0"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Import",
+       "default": "",
+       "is": "1"
+      }
+     ]
+    },
+    {
+     "file": "Interface\\Icons\\CoA_Race_{each}.blp",
+     "addFile": {
+      "from": {
+       "setting": "CustomRaces.{each}.IconFile",
+       "conf": "mod_custom_races.conf",
+       "default": "",
+       "text": true
+      }
+     },
+     "forEach": {
+      "conf": "mod_custom_races.conf",
+      "key": "CustomRaces.Races",
+      "default": ""
+     },
+     "when": [
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Id",
+       "default": "",
+       "notIn": [
+        "",
+        "0"
+       ]
+      },
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.IconFile",
+       "default": "",
+       "notIn": [
+        ""
        ]
       }
      ]
@@ -2947,6 +3113,37 @@
        "key": "CustomRaces.{each}.Copy",
        "default": "",
        "is": "1"
+      }
+     ]
+    },
+    {
+     "file": "DBFilesClient\\CharSections.dbc",
+     "sectionRules": {
+      "race": {
+       "setting": "CustomRaces.{each}.Id",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      },
+      "maleOnly": {
+       "setting": "CustomRaces.{each}.MaleOnly",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      }
+     },
+     "forEach": {
+      "conf": "mod_custom_races.conf",
+      "key": "CustomRaces.Races",
+      "default": ""
+     },
+     "when": [
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.{each}.Id",
+       "default": "",
+       "notIn": [
+        "",
+        "0"
+       ]
       }
      ]
     }

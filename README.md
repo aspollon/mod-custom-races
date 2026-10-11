@@ -37,6 +37,24 @@ for every helmet, so their characters - players and bots - keep their helmets hi
 every login; `CustomRaces.<race>.OwnHelmets`, which the setup page sets from what the client carries). The showcase of
 the character creation still shows it.
 
+**Races from other clients.** Other game clients and repacks bring races the CoA client does not have (Void Elf,
+Dark Iron Dwarf, Lightforged, Nightborne and more). Gathered into a race folder - one folder per race, with its rows in
+`race.json` and its models and textures in `files\` - AFK Realm offers them on the setup page next to the races of
+the client (`CustomRaces.ImportFolder`, `CustomRaces.<race>.Import = 1`). Their rows go into the client patch, their
+files into an archive of their own for each race (`Data\patch-ZY<number>.MPQ`). The module ships none of these
+files: the race folder is the player's own.
+
+**The character creation of the Ascension client** needs rules for the skins, faces, hair and underwear of every
+added race, or it crashes or paints wrong textures: every row playable, a face and an underwear for every skin colour,
+women's rows for races that only have men, one sorted block per race, HD rows on the ids of their plain rows, and
+empty textures pointing at a NUL byte (offset 0 of the client's string block is the Human male skin). These were found
+by ilusixn for CoA Custom (https://github.com/ilusixn/azerothcore-wotlk-coa); the client patch applies them to every
+race of the module.
+
+**Icons** on the race choice: the race's own icon from the race folder (`_Icons\CoA_Race_<race>.blp`), shown round.
+**Placement**: the stock races keep a column at the edge of their side, the added races get columns of their own next
+to it, from the top.
+
 **Portraits** on the race choice are round like those of the stock races: an older round portrait of the game (Goblin,
 Worgen), an icon of the game cut round, or the round portrait of its base race.
 

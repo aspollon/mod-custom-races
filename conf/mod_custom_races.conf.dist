@@ -55,6 +55,9 @@ CustomRaces.Races = ""
 #    CustomRaces.<race>.MaleOnly      1: the client has no female body for it; its characters are men.
 #    CustomRaces.<race>.OwnHelmets    1: the client has helmet models for it. 0: it would show a placeholder for
 #                                     every helmet, so its characters (players and bots) keep helmets hidden.
+#    CustomRaces.<race>.Import        1: the race comes from the race folder (its rows and files), 0: from the client.
+#    CustomRaces.<race>.Icon          Its icon on the race choice (Interface\Icons\...), and IconFile, the file of it.
+#    CustomRaces.ImportFolder         The race folder: one folder per race, each with race.json and files\.
 #    CustomRaces.<race>.Base          The stock race it leans on, by name: Human, Orc, Dwarf, NightElf, Undead,
 #                                     Tauren, Gnome, Troll, BloodElf or Draenei. Pick it before players make
 #                                     characters of the race: changed later, they keep their place but may
