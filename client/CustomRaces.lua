@@ -282,8 +282,14 @@ if SetCharacterGender and SetCharacterRace and CharCreateFemaleButton then
 		return setGender(sex)
 	end
 
+	-- The game builds the model of the chosen race and sex at once: a woman of a race without a female body crashes
+	-- it. A click on such a race switches to male first, while the race shown before is still the chosen one.
 	local setCharacterRace = SetCharacterRace
 	function SetCharacterRace(id)
+		local race = listed[id]
+		if race and race.maleOnly and GetSelectedSex() == SEX_FEMALE then
+			setGender(SEX_MALE)
+		end
 		local result = setCharacterRace(id)
 		if MaleOnly() then
 			CharCreateFemaleButton:Disable()
