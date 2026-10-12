@@ -1,5 +1,7 @@
 # mod-custom-races
 
+**English** · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru.md) · [简体中文](README.zh-Hans.md)
+
 More playable races for **Conquest of Azeroth** (CoA), an AzerothCore module.
 
 The game client of Conquest of Azeroth already carries the models, skins and hair of many races no player can choose:
@@ -131,3 +133,7 @@ a race looks in game, a rating, a better portrait, and races made from another (
 
 Test version. Compiled against the CoA core of 10 October 2026 together with its patch; the client patch built from
 the CoA client of the same date.
+
+## Languages
+
+`lang/<code>.json` carries the texts AFK Realm shows of this module (its option descriptions, the names and reasons of `afk-realm.json`, the race names) in German, French, Spanish, Portuguese (Brazil), Russian and Simplified Chinese. AFK Realm's `tools/lang.py --module <folder> check` lists what a change left untranslated.
