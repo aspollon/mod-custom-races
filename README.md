@@ -87,6 +87,10 @@ Each race leans on a stock race, its **base race** (`CustomRaces.<race>.Base`, a
   base race are lent (`emotetextsound_dbc`) and the server sends the sound. Read are `EmotesTextSound.dbc` and, where
   the data folder has it, the client's HD voice table `HDEmotesTextSound.dbc` (the laughter and crying lines sit
   there); the HD row is the one that counts.
+- **Camera**: the character creation shows a race in the scene of its base race, with its camera; a race much taller
+  than its base race (the Highmountain Tauren) stood half out of the picture. AFK Realm measures how tall the models
+  stand (from their model files) and the camera goes a little back and up by how much taller the race is, in the
+  choice of race and class and in the customization; the zoom onto the face goes less far.
 
 The random bots of mod-playerbots are made in the new races too: they take a race from the races the server offers,
 and their side from the core's race table.

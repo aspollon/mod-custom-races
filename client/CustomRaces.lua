@@ -539,3 +539,140 @@ if SetCharacterGender and SetCharacterRace and CharCreateFemaleButton then
 		return result
 	end
 end
+
+-- The camera of the character creation is set for the base race's scene: a race much taller than its base race (the
+-- Highmountain Tauren next to the Tauren) showed only in part. AFK Realm writes how tall the models stand
+-- ("{height:RACE:SEX}", in yards, measured from their model files); the camera follows how much taller the race is.
+local BASE_HEIGHT = {
+	Human = { "{height:1:0}", "{height:1:1}" }, Orc = { "{height:2:0}", "{height:2:1}" }, Dwarf = { "{height:3:0}", "{height:3:1}" },
+	NightElf = { "{height:4:0}", "{height:4:1}" }, Undead = { "{height:5:0}", "{height:5:1}" }, Tauren = { "{height:6:0}", "{height:6:1}" },
+	Gnome = { "{height:7:0}", "{height:7:1}" }, Troll = { "{height:8:0}", "{height:8:1}" }, BloodElf = { "{height:10:0}", "{height:10:1}" },
+	Draenei = { "{height:11:0}", "{height:11:1}" },
+}
+
+-- How much taller (or smaller) a race stands than its base race; 1 when it is not known.
+local function SizeOf(race, sex)
+	if not race then
+		return 1, 0
+	end
+	local i = sex == SEX_FEMALE and 2 or 1
+	local own = race.height and tonumber(race.height[i])
+	local base = BASE_HEIGHT[race.base] and tonumber(BASE_HEIGHT[race.base][i])
+	if not own or not base or own <= 0 or base <= 0 then
+		return 1, 0
+	end
+	return math.max(0.5, math.min(3, own / base)), own - base
+end
+
+-- How the camera follows the size (set by eye on the Highmountain Tauren, men and women): per scene, back by a share of
+-- how much taller the race is (0.3: a third of it) and up by a share of how many yards taller it is; the zoom onto the
+-- face goes a share less far than for the base race (-0.3), so that a taller head stays in view.
+local camera = { size = 1, taller = 0, zoom = -0.3,
+	scenes = { race = { back = 0.3, up = 0.4 }, custom = { back = 0.8, up = 0.4 } } }
+
+local function Scene()
+	local steps = Enum and Enum.CharCreateSteps
+	if CharacterCreateFrame and steps and steps.Customization and CharacterCreateFrame.state == steps.Customization then
+		return "custom"
+	end
+	return "race"
+end
+local cc = C_CharacterCreate
+
+local function Sized(x, y, z, size)
+	local scene = camera.scenes[Scene()]
+	local back = 1 + (size - 1) * scene.back
+	return x * back, y * back, z + camera.taller * scene.up
+end
+
+-- The client places its camera a frame after it is told to (a reset, a race): its position is read two frames later,
+-- once, and kept. The camera is always set from that position - never from one read after setting it ourselves, or
+-- every setting would grow on the last one.
+local function Creating()
+	return CharacterCreate and CharacterCreate:IsShown()
+end
+
+local function Apply()
+	if not Creating() then
+		camera.size, camera.taller = 1, 0
+		return
+	end
+	local race = listed[GetSelectedRace and GetSelectedRace() or 0]
+	local size, taller = SizeOf(race, GetSelectedSex and GetSelectedSex())
+	camera.size, camera.taller = size, (taller or 0)
+	local f = camera.from
+	if cc and cc.SetCameraPosition and f and f[1] and not IS_ZOOMED and math.abs(camera.size - 1) > 0.02 then
+		cc.SetCameraPosition(Sized(f[1], f[2], f[3], camera.size))
+		camera.moved = true
+	end
+end
+
+local later = CreateFrame("Frame")
+later:Hide()
+later:SetScript("OnUpdate", function(self)
+	self.frames = self.frames - 1
+	if self.frames > 0 then
+		return
+	end
+	self:Hide()
+	if cc and cc.GetCameraPosition then
+		camera.from = { cc.GetCameraPosition() }
+		camera.moved = false
+	end
+	Apply()
+end)
+local function ReadLater()
+	if not Creating() then
+		camera.size, camera.taller, camera.moved = 1, 0, false
+		return
+	end
+	later.frames = 2
+	later:Show()
+end
+
+if cc and cc.ResetCameraPosition and cc.GetCameraPosition and cc.SetCameraPosition then
+	local reset = cc.ResetCameraPosition
+	cc.ResetCameraPosition = function(...)
+		local result = reset(...)
+		ReadLater()
+		return result
+	end
+	camera.reset = reset
+	-- the zoom onto the face of a taller race goes less far (camera.zoom), so that its head stays in view
+	if cc.ZoomIn and cc.ZoomOut then
+		local zoomIn, zoomOut = cc.ZoomIn, cc.ZoomOut
+		local function factor() return Creating() and math.max(0.2, 1 + (camera.size - 1) * camera.zoom) or 1 end
+		cc.ZoomIn = function(step, ...) return zoomIn((step or 0) * factor(), ...) end
+		cc.ZoomOut = function(step, ...) return zoomOut((step or 0) * factor(), ...) end
+	end
+end
+
+-- a race or sex chosen: the camera of the client first, then sized - for races of another size, or when the camera
+-- was moved for the race before
+local function Resize()
+	if not camera.reset or IS_ZOOMED or not Creating() then
+		return
+	end
+	local race = listed[GetSelectedRace and GetSelectedRace() or 0]
+	local size = SizeOf(race, GetSelectedSex and GetSelectedSex())
+	if math.abs(size - 1) > 0.02 or camera.moved then
+		camera.reset()
+		ReadLater()
+	end
+end
+if SetCharacterRace then
+	local setRace = SetCharacterRace
+	function SetCharacterRace(...)
+		local result = setRace(...)
+		Resize()
+		return result
+	end
+end
+if SetCharacterGender then
+	local setGender = SetCharacterGender
+	function SetCharacterGender(...)
+		local result = setGender(...)
+		Resize()
+		return result
+	end
+end
