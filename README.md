@@ -90,7 +90,8 @@ Each race leans on a stock race, its **base race** (`CustomRaces.<race>.Base`, a
 - **Camera**: the character creation shows a race in the scene of its base race, with its camera; a race much taller
   than its base race (the Highmountain Tauren) stood half out of the picture. AFK Realm measures how tall the models
   stand (from their model files) and the camera goes a little back and up by how much taller the race is, in the
-  choice of race and class and in the customization; the zoom onto the face goes less far.
+  choice of race and class, in the customization and in the character selection; the zoom onto the face goes less
+  far.
 
 The random bots of mod-playerbots are made in the new races too: they take a race from the races the server offers,
 and their side from the core's race table.

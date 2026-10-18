@@ -676,3 +676,69 @@ if SetCharacterGender then
 		return result
 	end
 end
+
+-- The character selection shows a character in the scene of its race (a new race: of its base race), with that
+-- scene's camera: a much taller race stood half out of the picture there too. The camera follows its size as above.
+-- set by eye on the Highmountain Tauren: a little more back than in the creation, hardly up
+local chosen = { scene = { back = 0.6, up = 0.1 }, moved = false }
+
+local function Selected()
+	local index = CharacterSelect and CharacterSelect.selectedIndex
+	if not index or index == 0 or not GetCharacterInfo then
+		return nil
+	end
+	local id = GetCharIDFromIndex and GetCharIDFromIndex(index) or index
+	local _, raceName, _, _, _, sex = GetCharacterInfo(id)
+	return raceName and Find(raceName, raceName), sex == SEX_FEMALE and SEX_FEMALE or SEX_MALE
+end
+
+local function SelectApply()
+	local race, sex = Selected()
+	local size, taller = SizeOf(race, sex)
+	chosen.size, chosen.taller = size, taller or 0
+	local f = chosen.from
+	if cc and cc.SetCameraPosition and f and f[1] then
+		if math.abs(size - 1) > 0.02 then
+			local back = 1 + (size - 1) * chosen.scene.back
+			pcall(cc.SetCameraPosition, f[1] * back, f[2] * back, f[3] + chosen.taller * chosen.scene.up)
+			chosen.moved = true
+		elseif chosen.moved then
+			pcall(cc.SetCameraPosition, f[1], f[2], f[3])
+			chosen.moved = false
+		end
+	end
+end
+
+local selectLater = CreateFrame("Frame")
+selectLater:Hide()
+selectLater:SetScript("OnUpdate", function(self)
+	self.frames = self.frames - 1
+	if self.frames > 0 then
+		return
+	end
+	self:Hide()
+	local ok, x, y, z = pcall(function() return cc.GetCameraPosition() end)
+	chosen.from = ok and x and { x, y, z } or nil
+	SelectApply()
+end)
+
+-- another character chosen: the camera as the client sets it for that scene, read a few frames later, then sized
+local function SelectChanged()
+	if Creating() or not CharacterSelect or not CharacterSelect:IsShown() then
+		return
+	end
+	if chosen.moved and camera.reset then
+		pcall(camera.reset)
+	end
+	chosen.moved = false
+	selectLater.frames = 5
+	selectLater:Show()
+end
+if CharacterSelect_SelectCharacter then
+	local selectCharacter = CharacterSelect_SelectCharacter
+	function CharacterSelect_SelectCharacter(...)
+		local result = selectCharacter(...)
+		SelectChanged()
+		return result
+	end
+end
