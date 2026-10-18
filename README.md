@@ -82,6 +82,11 @@ Each race leans on a stock race, its **base race** (`CustomRaces.<race>.Base`, a
 - **Looks**: its own, from the game client (the core patch lets a character wear a model above number 65535, as
   most of these races have). Races without a female model are male: the character creation offers no
   female, and the random bots of the race are made men.
+- **Voice**: the voice of its base race at the emotes (`/silly`, `/joke`, `/laugh` and so on). The game client speaks
+  voices for the stock races only, none for a race of the module, whatever a patch brings it - so the voice rows of its
+  base race are lent (`emotetextsound_dbc`) and the server sends the sound. Read are `EmotesTextSound.dbc` and, where
+  the data folder has it, the client's HD voice table `HDEmotesTextSound.dbc` (the laughter and crying lines sit
+  there); the HD row is the one that counts.
 
 The random bots of mod-playerbots are made in the new races too: they take a race from the races the server offers,
 and their side from the core's race table.

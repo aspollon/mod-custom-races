@@ -256,6 +256,7 @@ DELETE FROM `player_totem_model` WHERE `RaceID` IN (%(ids)s);
 DELETE FROM `playercreateinfo_skills` WHERE `raceMask` IN (%(masks)s);
 DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` IN (%(masks)s);
 DELETE FROM `ascension_custom_class_race` WHERE `race` IN (%(ids)s);
+DELETE FROM `emotetextsound_dbc` WHERE `RaceId` IN (%(ids)s);
 ''' % dict(ids=', '.join(map(str, ids)), masks=', '.join(str(bit(i)) for i in ids if i <= 32))
     chars = '''-- mod-custom-races: run by AFK Realm when the module is removed (data/sql/remove). Written by tools/races.py.
 -- Characters of its races play a stock race from now on: the base race the module gave them (kept in

@@ -18,6 +18,11 @@
 # A race may also bring racial abilities of its own; the rows of those spells the module takes from the server data
 # folder of the server pack (CustomRaces.ServerDataFolder, CustomRaces.<race>.Racials below).
 #
+# A race also speaks with the voice of its base race: at the emotes (/silly, /joke and so on) the server sends that
+# voice, for the game client plays voices for the stock races only - for a race of ours it has none. The rows are
+# read from EmotesTextSound.dbc and, where the data folder has it, from the client's HD voice table
+# HDEmotesTextSound.dbc (the laughter and crying lines sit there).
+#
 [worldserver]
 
 #

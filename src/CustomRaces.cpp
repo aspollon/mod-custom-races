@@ -310,6 +310,7 @@ namespace
             WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` = {}", Bit(id));
         }
         WorldDatabase.DirectExecute("DELETE FROM `ascension_custom_class_race` WHERE `race` = {}", id);
+        WorldDatabase.DirectExecute("DELETE FROM `emotetextsound_dbc` WHERE `RaceId` = {}", id);
     }
 
     /// The rows of one race: removed always, written again while the race is on.
@@ -545,6 +546,101 @@ namespace
             LOG_INFO("module", "mod-custom-races: racial rows of {} race(s) taken over from {}, {} spell(s) given back", taken, dir.string(), dropped);
     }
 
+    // ---------------------------------------------------------------------------------- the voices of the emotes
+
+    /// One row of a voice table of the server's data folder (EmotesTextSound.dbc, HDEmotesTextSound.dbc): the sound
+    /// one race speaks at one emote, in one sex.
+    struct VoiceRow
+    {
+        uint32 Id, EmotesTextId, RaceId, SexId, SoundId;
+    };
+
+    /// The rows of one voice table of the server's data folder, as the core reads the classic one a moment later. The
+    /// file is nothing but numbers: a header of five counts, then rows of five numbers - id, emote, race, sex (0 a
+    /// man, 1 a woman), sound.
+    std::vector<VoiceRow> ReadVoiceFile(std::string const& file, bool complain)
+    {
+        std::string path = sConfigMgr->GetOption<std::string>("DataDir", "./");
+        if (path.empty() || (path.back() != '/' && path.back() != '\\'))
+            path.push_back('/');
+        path += "dbc/" + file;
+
+        std::ifstream in(path, std::ios::binary);
+        uint32 header[5] = {};
+        if (!in || !in.read(reinterpret_cast<char*>(header), sizeof(header)) ||
+            header[0] != 0x43424457 || header[2] != 5 || header[3] != sizeof(VoiceRow))
+        {
+            if (complain)
+                LOG_WARN("module", "mod-custom-races: {} is not an EmotesTextSound table; the races speak no voices of their base races", path);
+            return {};
+        }
+
+        std::vector<VoiceRow> rows;
+        for (uint32 i = 0; i < header[1]; ++i)
+        {
+            uint32 row[5] = {};
+            if (!in.read(reinterpret_cast<char*>(row), sizeof(row)))
+                break;
+            rows.push_back({ row[0], row[1], row[2], row[3], row[4] });
+        }
+        return rows;
+    }
+
+    /// The voice rows of the server's own tables: EmotesTextSound.dbc, and the HD table where the data folder has it
+    /// (HDEmotesTextSound.dbc - it holds the lines an HD client speaks, the laughter and the crying the classic table
+    /// has none of). Of rows that stand in both, the HD one wins: its sound is the one the client plays for the
+    /// models these races wear.
+    std::vector<VoiceRow> ReadVoiceTable()
+    {
+        std::vector<VoiceRow> rows = ReadVoiceFile("EmotesTextSound.dbc", true);
+        for (VoiceRow const& row : ReadVoiceFile("HDEmotesTextSound.dbc", false))
+        {
+            auto same = [&row](VoiceRow const& other)
+            {
+                return other.EmotesTextId == row.EmotesTextId && other.RaceId == row.RaceId && other.SexId == row.SexId;
+            };
+            if (auto it = std::find_if(rows.begin(), rows.end(), same); it != rows.end())
+                it->SoundId = row.SoundId;
+            else
+                rows.push_back(row);
+        }
+        return rows;
+    }
+
+    /// The voice of every emote a character says: the game client speaks those of the stock races itself, from its
+    /// own table - but it has none for a race of ours, whatever rows a patch brings it (its voice table ends at the
+    /// stock races). So the rows of the base race are lent to the new race in the world database, in the table the
+    /// core reads the rows of the client's voice table from (emotetextsound_dbc) - the same way the rows of the race
+    /// itself are lent. They are written again at every start; DeleteRows takes them back for a race that is off,
+    /// that leaves the settings or that is given up, and the sound of a said emote is sent by CustomRacesPlayer.
+    void LendVoices()
+    {
+        std::vector<VoiceRow> const table = ReadVoiceTable();
+        if (table.empty())
+            return;
+
+        // New rows get numbers above every number of the table and of the rows others wrote into it, so no row of
+        // the client's own table is ever overridden.
+        uint32 nextId = 1;
+        for (VoiceRow const& row : table)
+            nextId = std::max(nextId, row.Id + 1);
+        if (QueryResult highest = WorldDatabase.Query("SELECT `Id` FROM `emotetextsound_dbc` ORDER BY `Id` DESC LIMIT 1"))
+            nextId = std::max(nextId, (*highest)[0].Get<uint32>() + 1);
+
+        uint32 lent = 0;
+        for (RaceDef const* race : active)
+            for (VoiceRow const& row : table)
+                if (row.RaceId == race->Base)
+                {
+                    WorldDatabase.DirectExecute("REPLACE INTO `emotetextsound_dbc` (`Id`, `EmotesTextId`, `RaceId`, `SexId`, `SoundId`) "
+                        "VALUES ({}, {}, {}, {}, {})", nextId++, row.EmotesTextId, race->Id, row.SexId, row.SoundId);
+                    ++lent;
+                }
+
+        if (lent)
+            LOG_INFO("module", "mod-custom-races: {} voice(s) of their base races lent to {} race(s)", lent, active.size());
+    }
+
     // ---------------------------------------------------------------------------------- what the base race lends
 
     /// A race mask that admits the base race admits the new race too: faction masks and masks of the base race alone.
@@ -613,6 +709,13 @@ public:
             "`skin` TINYINT UNSIGNED NOT NULL, `face` TINYINT UNSIGNED NOT NULL, `hairStyle` TINYINT UNSIGNED NOT NULL, "
             "`hairColor` TINYINT UNSIGNED NOT NULL, `facialStyle` TINYINT UNSIGNED NOT NULL, PRIMARY KEY (`guid`)) "
             "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='mod-custom-races: characters of a race switched off, and their looks'");
+        // The voices of the emotes are lent in the world database, in the table the core reads the voice rows of the
+        // client's own table from. The core's files create it as well; this is for a server whose database never saw
+        // them, so that the rows are carried either way.
+        WorldDatabase.DirectExecute("CREATE TABLE IF NOT EXISTS `emotetextsound_dbc` (`Id` INT NOT NULL DEFAULT '0', "
+            "`EmotesTextId` INT NOT NULL DEFAULT '0', `RaceId` INT NOT NULL DEFAULT '0', `SexId` INT NOT NULL DEFAULT '0', "
+            "`SoundId` INT NOT NULL DEFAULT '0', PRIMARY KEY (`Id`) USING BTREE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 "
+            "COMMENT='mod-custom-races: the voices of its races, lent from their base races'");
         FreeNumbers();
         for (RaceDef const& race : races)
         {
@@ -625,6 +728,9 @@ public:
             if (on)
                 active.push_back(&race);
         }
+
+        // The voices every emote of a race of ours says: the client has none for it, so the base race lends them.
+        LendVoices();
 
         // A race above 32 has the mask of its base race from the start: the core reads the races, their skills and
         // spells right after this.
@@ -705,7 +811,7 @@ class CustomRacesPlayer : public PlayerScript
 {
 public:
     CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS, PLAYERHOOK_ON_LOGIN,
-        PLAYERHOOK_ON_LOOT_ITEM }) { }
+        PLAYERHOOK_ON_LOOT_ITEM, PLAYERHOOK_ON_TEXT_EMOTE }) { }
 
     bool OnPlayerCreateInitialItems(Player* player, bool& /*handled*/) override
     {
@@ -741,6 +847,20 @@ public:
         if (proto && proto->Class == ITEM_CLASS_TRADE_GOODS && proto->SubClass == ITEM_SUBCLASS_MEAT &&
             KnowsRacial(player, SPELL_WASTE_NOT_WANT_NOT) && roll_chance_i(WasteNotChance))
             player->AddItem(proto->ItemId, 1);
+    }
+
+    /// The voice of a text emote (/silly, /joke and so on): the game client speaks the voice of a stock race itself,
+    /// from its own voice table - but it plays nothing for a race of ours, whatever rows a patch brings it. So the
+    /// voice the base race would speak is sent from here, from the rows the base race lent (LendVoices); everyone
+    /// around hears it, as they hear the voice of a stock race.
+    void OnPlayerTextEmote(Player* player, uint32 textEmote, uint32 /*emoteNum*/, ObjectGuid /*guid*/) override
+    {
+        RaceDef const* race = player ? ActiveRace(player) : nullptr;
+        if (!race)
+            return;
+
+        if (EmotesTextSoundEntry const* voice = FindTextSoundEmoteFor(textEmote, race->Id, player->getGender()))
+            player->PlayDistanceSound(voice->SoundId);
     }
 };
 

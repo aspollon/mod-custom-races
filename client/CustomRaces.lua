@@ -4,6 +4,10 @@
 -- buttons for eleven. This file adds buttons for more, lays them out by faction - Alliance on the left, Horde on the
 -- right - and gives the new races their portrait, their text, the racial abilities and background scene of their base
 -- race, and keeps races without a female model male.
+-- The stock races keep one column at their edge; the added races fill columns of their own towards the middle, from
+-- the top, and give way to the class choice in the lower middle (a column that would reach it keeps only the rows
+-- above it). A side with more races than its columns hold scrolls: the mouse wheel, or the bar next to the last
+-- column.
 
 -- The races the realm chose, as AFK Realm read them from this game client (mod_custom_races.conf): one line each.
 local RACES = {}
@@ -191,6 +195,26 @@ local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 end
 CharCreateRaceButtonMixin.SetRace = SetRace
 
+-- A side with more races than its columns hold scrolls: its races move by the mouse wheel over the buttons, or by
+-- its bar. The offset lives here, so it keeps its place when the races are laid out again.
+local SCROLL = { Alliance = { offset = 0 }, Horde = { offset = 0 } }
+local BARS = {}
+local ZONE
+local LAST_COUNT = 0
+local Layout, Watch
+
+local function ScrollWheel(faction, delta)
+	local state = SCROLL[faction] or SCROLL.Alliance
+	if state.scrolling then
+		state.offset = (state.offset or 0) + (delta > 0 and -1 or 1)
+		Layout(LAST_COUNT)
+	end
+end
+
+local function OnRaceWheel(self, delta)
+	ScrollWheel(self.faction or "Alliance", delta)
+end
+
 MAX_RACES = BUTTONS
 for i = 1, BUTTONS do
 	local button = _G["CharCreateRaceButton" .. i]
@@ -200,12 +224,121 @@ for i = 1, BUTTONS do
 		button:Hide()
 	end
 	button.SetRace = SetRace
+	button:EnableMouseWheel(true)
+	button:SetScript("OnMouseWheel", OnRaceWheel)
 end
 
--- Alliance on the left, Horde on the right. The stock races keep one column at the edge; the added races get columns
--- of their own next to it, towards the middle, from the top - not below the stock races, where buttons and tooltips
--- of the character creation are.
-local function Layout(count)
+-- What the character creation shows for the class choice - its frame and the class buttons of the client in it -
+-- as one rectangle: what a race column must stay out of. Left and right in screen units, top upwards.
+local function ClassZone()
+	local W = CharCreateRaceButtonsFrame:GetWidth() or 1024
+	local l, r, top = W / 2 - 400, W / 2 + 400, 292
+	local frame = CharCreateClassFrame
+	if frame and frame:IsShown() then
+		local fl, fr, ft = frame:GetLeft(), frame:GetRight(), frame:GetTop()
+		if fl and fr and ft and fr - fl > 100 then
+			l, r, top = fl, fr, ft
+		end
+		local function Eat(item)
+			local kind = item:GetObjectType()
+			if (kind == "Button" or kind == "CheckButton") and item:IsShown() then
+				local il, ir, it = item:GetLeft(), item:GetRight(), item:GetTop()
+				if il and ir and it and ir - il > 8 then
+					if il < l then
+						l = il
+					end
+					if ir > r then
+						r = ir
+					end
+					if it > top then
+						top = it
+					end
+				end
+			end
+		end
+		local function Walk(item, depth)
+			if depth > 3 then
+				return
+			end
+			for _, child in ipairs({ item:GetChildren() }) do
+				Eat(child)
+				Walk(child, depth + 1)
+			end
+		end
+		Walk(frame, 0)
+	end
+	return l, r, top
+end
+
+-- Scroll one side and lay the sides out anew.
+local function ScrollTo(faction, offset)
+	SCROLL[faction].offset = offset
+	Layout(LAST_COUNT)
+end
+
+-- The bar of a side: a thin track with a thumb to drag, the mouse wheel over it. Shown when a side has more races
+-- than its columns hold.
+local function CreateBar(faction)
+	local track = CreateFrame("Frame", nil, CharCreateRaceButtonsFrame)
+	track:SetWidth(6)
+	track:EnableMouse(true)
+	track:EnableMouseWheel(true)
+	local back = track:CreateTexture(nil, "BACKGROUND")
+	back:SetAllPoints(track)
+	back:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+	back:SetVertexColor(0, 0, 0, 0.4)
+	local thumb = CreateFrame("Frame", nil, track)
+	thumb:SetWidth(6)
+	thumb:EnableMouse(true)
+	local knob = thumb:CreateTexture(nil, "ARTWORK")
+	knob:SetAllPoints(thumb)
+	knob:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+	knob:SetVertexColor(0.85, 0.85, 0.85, 0.9)
+	local drag
+	thumb:SetScript("OnMouseDown", function()
+		local _, y = GetCursorPosition()
+		drag = { y = y, offset = SCROLL[faction].offset or 0 }
+	end)
+	thumb:SetScript("OnMouseUp", function()
+		drag = nil
+	end)
+	thumb:SetScript("OnUpdate", function()
+		local state = SCROLL[faction]
+		local bar = BARS[faction]
+		if not drag or not state.scrolling or not bar then
+			return
+		end
+		local span = (bar.track:GetHeight() or 0) - (bar.thumb:GetHeight() or 0)
+		local rows = (state.total or 0) - (state.rows or 0)
+		if span <= 0 or rows <= 0 then
+			return
+		end
+		local _, y = GetCursorPosition()
+		ScrollTo(faction, drag.offset + (drag.y - y) / (track:GetEffectiveScale() or 1) * rows / span)
+	end)
+	track:SetScript("OnMouseWheel", function(_, delta)
+		ScrollWheel(faction, delta)
+	end)
+	return { track = track, thumb = thumb }
+end
+
+-- Alliance on the left, Horde on the right. The stock races keep one column at the edge; the added races fill
+-- columns of their own towards the middle, from the top. A column whose buttons would stand over the class choice
+-- of the lower middle keeps only the rows above it; where its name is, the class choice is left alone, too. When a
+-- side has more races than its columns hold, the rest scrolls.
+Layout = function(count)
+	local frame = CharCreateRaceButtonsFrame
+	local W = frame:GetWidth() or 1024
+	local H = frame:GetHeight() or 768
+	local frameTop = frame:GetTop() or H
+	local frameBottom = frame:GetBottom() or 0
+	local zoneL, zoneR, zoneTop = ClassZone()
+	zoneTop = zoneTop + 12
+	ZONE = { l = zoneL, r = zoneR, top = zoneTop }
+	local size = CharCreateRaceButton1 and CharCreateRaceButton1:GetHeight() or 52
+	local step = size + 12
+	local room = math.max(300, H - 120)
+	local fit = math.max(1, math.floor((room + 12) / step))
 	local sides = { Alliance = { stock = {}, added = {} }, Horde = { stock = {}, added = {} } }
 	for i = 1, count do
 		local _, faction = GetFactionForRace(i)
@@ -214,15 +347,43 @@ local function Layout(count)
 		end
 		table.insert(listed[i] and sides[faction].added or sides[faction].stock, i)
 	end
-	local size = CharCreateRaceButton1 and CharCreateRaceButton1:GetHeight() or 52
-	local room = math.max(300, (CharCreateRaceButtonsFrame:GetHeight() or 620) - 120)
-	local fit = math.max(1, math.floor((room + 12) / (size + 12)))
+	-- What a column of added races may hold: the first row that would stand over the class choice (or below the
+	-- foot of the screen) ends the column. Columns end before the middle of the screen.
+	local base = (#sides.Alliance.stock > 0 or #sides.Horde.stock > 0) and 1 or 0
+	local caps, last = {}, base - 1
+	for column = base, base + 7 do
+		local x = 32 + column * 170
+		if x + size > W / 2 - 20 then
+			break
+		end
+		local rows = 0
+		for row = 0, fit - 1 do
+			local bottom = frameTop - (75 + row * step + size)
+			if bottom < frameBottom + 84 then
+				break
+			end
+			if bottom < zoneTop and x + size + 150 > zoneL - 12 and x < zoneR + 12 then
+				break
+			end
+			rows = rows + 1
+		end
+		if rows == 0 then
+			break
+		end
+		caps[column] = rows
+		last = column
+	end
+	local capacity = 0
+	for column = base, last do
+		capacity = capacity + (caps[column] or 0)
+	end
+	local columns = last - base + 1
 	local function place(button, faction, column, row, gap)
 		button:ClearAllPoints()
 		if faction == "Alliance" then
-			button:SetPoint("TOPLEFT", CharCreateRaceButtonsFrame, "TOPLEFT", 32 + column * 170, -75 - row * (size + gap))
+			button:SetPoint("TOPLEFT", frame, "TOPLEFT", 32 + column * 170, -75 - row * (size + gap))
 		else
-			button:SetPoint("TOPRIGHT", CharCreateRaceButtonsFrame, "TOPRIGHT", -32 - column * 170, -75 - row * (size + gap))
+			button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -32 - column * 170, -75 - row * (size + gap))
 		end
 		button:SetFaction(faction)
 		button:Show()
@@ -233,9 +394,62 @@ local function Layout(count)
 		for k, i in ipairs(side.stock) do
 			place(_G["CharCreateRaceButton" .. i], faction, 0, k - 1, gap)
 		end
-		local first = n > 0 and 1 or 0
-		for k, i in ipairs(side.added) do
-			place(_G["CharCreateRaceButton" .. i], faction, first + math.floor((k - 1) / fit), (k - 1) % fit, 12)
+		local added, state = side.added, SCROLL[faction]
+		local rows, total, offset = capacity, 0, 0
+		if #added > capacity and columns > 0 then
+			rows = caps[base]
+			for column = base, last do
+				rows = math.min(rows, caps[column])
+			end
+			total = math.ceil(#added / columns)
+			offset = math.max(0, math.min(total - rows, math.floor((state.offset or 0) + 0.5)))
+		end
+		state.offset, state.rows, state.total = offset, rows, total
+		state.scrolling = total > rows
+		for k, i in ipairs(added) do
+			local button = _G["CharCreateRaceButton" .. i]
+			local column, row
+			if state.scrolling then
+				column = base + math.floor((k - 1) / total)
+				row = (k - 1) % total - offset
+				if row < 0 or row >= rows then
+					column = nil
+				end
+			else
+				column, row = base, k - 1
+				while column <= last and row >= (caps[column] or 0) do
+					row = row - (caps[column] or 0)
+					column = column + 1
+				end
+				if column > last then
+					column = nil
+				end
+			end
+			if column then
+				place(button, faction, column, row, 12)
+			else
+				button:Hide()
+			end
+		end
+		local bar = BARS[faction]
+		if state.scrolling then
+			bar = bar or CreateBar(faction)
+			BARS[faction] = bar
+			local height = (rows - 1) * step + size
+			local thumb = math.max(24, height * rows / total)
+			bar.track:ClearAllPoints()
+			if faction == "Alliance" then
+				bar.track:SetPoint("TOPLEFT", frame, "TOPLEFT", 89 + last * 170, -75)
+			else
+				bar.track:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(89 + last * 170), -75)
+			end
+			bar.track:SetHeight(height)
+			bar.thumb:ClearAllPoints()
+			bar.thumb:SetPoint("TOP", 0, -(height - thumb) * offset / (total - rows))
+			bar.thumb:SetHeight(thumb)
+			bar.track:Show()
+		elseif bar then
+			bar.track:Hide()
 		end
 	end
 end
@@ -248,8 +462,47 @@ function CharacterCreateEnumerateRaces(...)
 		listed[#listed + 1] = Find(raceName, raceEnglishName) or false
 	end
 	enumerate(...)
-	Layout(math.min(CharacterCreate.numRaces or 0, BUTTONS))
+	LAST_COUNT = math.min(CharacterCreate.numRaces or 0, BUTTONS)
+	Layout(LAST_COUNT)
+	if Watch then
+		Watch.wait = 0.5
+		Watch:Show()
+	end
 end
+
+-- The class buttons of the client arrive after the races, and are built anew whenever the classes shown change:
+-- lay the races out again after them.
+if CharacterCreate_RefreshClassButtons then
+	local refresh = CharacterCreate_RefreshClassButtons
+	function CharacterCreate_RefreshClassButtons(self, ...)
+		local result = refresh(self, ...)
+		Layout(LAST_COUNT)
+		return result
+	end
+end
+
+-- The class choice moves while the character creation is open (the buttons arrive late, a race shows other
+-- classes): watch its place and lay the races out again when it moved.
+local watch = CreateFrame("Frame", nil, CharCreateRaceButtonsFrame)
+watch:Hide()
+watch.wait = 0
+watch:SetScript("OnUpdate", function(self, elapsed)
+	if not CharacterCreate:IsShown() then
+		self:Hide()
+		return
+	end
+	self.wait = self.wait - (elapsed or 0)
+	if self.wait > 0 then
+		return
+	end
+	self.wait = 0.5
+	local l, r, top = ClassZone()
+	local zone = ZONE
+	if not zone or math.abs(zone.l - l) + math.abs(zone.r - r) + math.abs(zone.top - (top + 12)) > 6 then
+		Layout(LAST_COUNT)
+	end
+end)
+Watch = watch
 
 -- Races without a female model are male only.
 local function MaleOnly()
