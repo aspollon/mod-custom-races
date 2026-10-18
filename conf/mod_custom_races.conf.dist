@@ -15,6 +15,9 @@
 # Everything can be taken back: a race switched off (or the module) leaves no rows behind, and its characters play
 # their base race until it is switched on again - then they get their race and looks back.
 #
+# A race may also bring racial abilities of its own; the rows of those spells the module takes from the server data
+# folder of the server pack (CustomRaces.ServerDataFolder, CustomRaces.<race>.Racials below).
+#
 [worldserver]
 
 #
@@ -58,6 +61,19 @@ CustomRaces.MoreRaces = 0
 CustomRaces.MoreRacesFile = ""
 
 #
+#    CustomRaces.ClientRootFolder
+#        Description: The files of CoA Custom that belong next to Ascension.exe: its folder files\client_root
+#                     (Ascension-b.exe, EsteriaAppearance.dll with its .bin files, cursors). AFK Realm copies all
+#                     of them next to the game when it installs the client patch (Modules > Game client > Install)
+#                     and takes them away again when this is emptied; a file of the same name that was there
+#                     before is kept as <name>.afk-backup. They do not go into the ZIP for the other players,
+#                     who have the client of CoA Custom themselves. Not read by the server.
+#        Default:     ""
+#
+
+CustomRaces.ClientRootFolder = ""
+
+#
 #    The options of each race, <race> being its key. The setup page of AFK Realm writes them from the game client.
 #
 #    CustomRaces.<race>.Source        The race's row in ChrRaces.dbc of the client: where its looks come from.
@@ -82,6 +98,15 @@ CustomRaces.MoreRacesFile = ""
 #                                     Tauren, Gnome, Troll, BloodElf or Draenei. Pick it before players make
 #                                     characters of the race: changed later, they keep their place but may
 #                                     change sides.
+#    CustomRaces.<race>.Racials       The racial abilities the race brings of its own, as spell ids ("110600 110602
+#                                     ..."): every one is learned at every login, and taken away at login from
+#                                     characters that do not play the race. The rows of these spells (spell_dbc and
+#                                     spell_script_names) the module takes over at every start from the .sql AFK
+#                                     Realm writes for the race into afk-realm\races of CustomRaces.ServerDataFolder,
+#                                     and gives back when the race goes off again.
+#    CustomRaces.ServerDataFolder     The server data folder of the server pack (Modules > Custom races > Server
+#                                     data): where the races' racial rows are read from. Without it no race brings
+#                                     any.
 #
 #    Example (the Goblin of the CoA client):
 #
@@ -96,4 +121,5 @@ CustomRaces.MoreRacesFile = ""
 #    CustomRaces.Goblin.MaleOnly = 0
 #    CustomRaces.Goblin.OwnHelmets = 1
 #    CustomRaces.Goblin.Base = "Orc"
+#    CustomRaces.Goblin.Racials = ""
 #

@@ -252,6 +252,7 @@ DELETE FROM `playercreateinfo` WHERE `race` IN (%(ids)s);
 DELETE FROM `playercreateinfo_action` WHERE `race` IN (%(ids)s);
 DELETE FROM `playercreateinfo_item` WHERE `race` IN (%(ids)s);
 DELETE FROM `player_race_stats` WHERE `Race` IN (%(ids)s);
+DELETE FROM `player_totem_model` WHERE `RaceID` IN (%(ids)s);
 DELETE FROM `playercreateinfo_skills` WHERE `raceMask` IN (%(masks)s);
 DELETE FROM `playercreateinfo_spell_custom` WHERE `racemask` IN (%(masks)s);
 DELETE FROM `ascension_custom_class_race` WHERE `race` IN (%(ids)s);

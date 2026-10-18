@@ -13,25 +13,46 @@
  * removes those of the races that are off; none of these races has rows of its own in the world database. What a
  * base race may do is lent to a new race in memory only, never written. A character of a race that is switched off
  * becomes its base race - with its old race kept aside, so that it gets it back when the race is switched on again.
+ *
+ * A race may also bring racial abilities of its own (CustomRaces.<race>.Racials). The rows of those spells are not
+ * written by the module: AFK Realm reads them from the server data folder of the server pack and writes them into a
+ * small file per race (afk-realm\races\<race>.sql). At every start the module runs the file of each race that is on,
+ * and takes the rows back out when the race or the server data goes off. What it gave out is kept in
+ * `custom_races_racials`, so a run can take back what an earlier one wrote, whatever the settings are by then.
  */
 
 #include "AscensionRacialAbilities.h"
+#include "Cell.h"
+#include "CellImpl.h"
 #include "Config.h"
 #include "DBCStores.h"
 #include "DatabaseEnv.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
 #include "Log.h"
+#include "MotionMaster.h"
 #include "Player.h"
 #include "ObjectMgr.h"
 #include "QuestDef.h"
+#include "Random.h"
 #include "ScriptMgr.h"
 #include "SharedDefines.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
+#include "SpellScript.h"
 #include "StringConvert.h"
 #include "Tokenize.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <list>
+#include <map>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 // In DBCStores.cpp, added by patches/core-custom-races.patch: a new race starts in the outfits of its base race and
@@ -78,6 +99,7 @@ namespace
         uint8 Base = 1;
         bool MaleOnly = false;
         bool OwnHelmets = true;                          // the client has helmet models for it
+        std::vector<uint32> RacialSpells;                // CustomRaces.<race>.Racials: what its characters learn
     };
 
     constexpr uint32 PLAYABLE_FLAGS = 0xC;
@@ -86,6 +108,18 @@ namespace
     constexpr uint32 RESURRECTION_SICKNESS = 15007;
     constexpr uint32 SPLASH_SOUND = 1096;
     constexpr char const* PREFIX = "CustomRaces.";
+
+    // The ported racial abilities of the Highmountain Tauren of CoA Custom (mod-custom-server's race_racials.cpp): the
+    // spells its code needs by id, and its tuning. Which racials a race grants comes from the settings
+    // (CustomRaces.<race>.Racials); the rows of the spells come from the server data folder.
+    constexpr uint32 SPELL_BULL_RUSH_KNOCKDOWN = 110601;
+    constexpr uint32 SPELL_RUGGED_TENACITY     = 110603;
+    constexpr uint32 SPELL_WASTE_NOT_WANT_NOT  = 110605;
+    constexpr float BullRushDistance           = 12.0f;
+    constexpr float BullRushSpeed              = 12.0f;
+    constexpr float BullRushHitRadius          = 3.0f;
+    constexpr float RuggedTenacityPerStamina   = 0.05f;
+    constexpr uint32 WasteNotChance            = 10;
 
     /// The bit of a race in race masks; races above 32 have none (with the core patch, they use the bit of their base race).
     constexpr uint32 Bit(uint8 race) { return race >= 1 && race <= 32 ? 1u << (race - 1) : 0; }
@@ -132,6 +166,47 @@ namespace
         return text;
     }
 
+    /// A list of spell ids as the settings write it: "110600 110602" or "110600, 110602".
+    std::vector<uint32> SpellIds(std::string const& text)
+    {
+        std::vector<uint32> spells;
+        std::string list = text;
+        std::replace(list.begin(), list.end(), ',', ' ');
+        for (std::string_view token : Acore::Tokenize(list, ' ', false))
+        {
+            std::string const word(token);
+            char* end = nullptr;
+            unsigned long value = std::strtoul(word.c_str(), &end, 10);
+            if (end && *end == '\0' && value > 0 && value < 0x80000000ul)
+                spells.push_back(uint32(value));
+        }
+        return spells;
+    }
+
+    /// A racial a character has, as mod-custom-server's race_racials.cpp checks it: learned, so its aura is on.
+    bool KnowsRacial(Unit const* unit, uint32 spellId)
+    {
+        return unit && unit->IsPlayer() && unit->HasAura(spellId);
+    }
+
+    template <typename Check>
+    std::list<Unit*> Collect(WorldObject* center, Check& check, float radius)
+    {
+        std::list<Unit*> units;
+        Acore::UnitListSearcher<Check> searcher(center, units, check);
+        Cell::VisitObjects(center, searcher, radius);
+        return units;
+    }
+
+    /// The enemies around a point the caster may hit (the check of mod-custom-server's race_racials.cpp).
+    std::list<Unit*> HostilesAround(Unit* caster, WorldObject* center, float radius)
+    {
+        Acore::AnyUnfriendlyUnitInObjectRangeCheck check(center, caster, radius);
+        auto units = Collect(center, check, radius);
+        units.remove_if([caster](Unit* unit) { return !caster->IsValidAttackTarget(unit); });
+        return units;
+    }
+
     /// The stock race CustomRaces.<race>.Base names, or the Human.
     uint8 ParseBase(RaceDef const& race)
     {
@@ -172,6 +247,7 @@ namespace
             race.FemaleDisplay = Number(race.Key, "FemaleDisplay");
             race.MaleOnly = Number(race.Key, "MaleOnly") != 0;
             race.OwnHelmets = Number(race.Key, "OwnHelmets", 1) != 0;
+            race.RacialSpells = SpellIds(Text(race.Key, "Racials"));
             race.Base = ParseBase(race);
 
             uint32 const id = Number(race.Key, "Id", race.Source < 32 ? race.Source : 0);
@@ -227,6 +303,7 @@ namespace
         WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_action` WHERE `race` = {}", id);
         WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_item` WHERE `race` = {}", id);
         WorldDatabase.DirectExecute("DELETE FROM `player_race_stats` WHERE `Race` = {}", id);
+        WorldDatabase.DirectExecute("DELETE FROM `player_totem_model` WHERE `RaceID` = {}", id);
         if (Bit(id))                                     // a mask of 0 is every race
         {
             WorldDatabase.DirectExecute("DELETE FROM `playercreateinfo_skills` WHERE `raceMask` = {}", Bit(id));
@@ -270,6 +347,9 @@ namespace
             "SELECT {}, `class`, `itemid`, `amount`, `Note` FROM `playercreateinfo_item` WHERE `race` = {}", race.Id, race.Base);
         WorldDatabase.DirectExecute("INSERT INTO `player_race_stats` (`Race`, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit`) "
             "SELECT {}, `Strength`, `Agility`, `Stamina`, `Intellect`, `Spirit` FROM `player_race_stats` WHERE `Race` = {}", race.Id, race.Base);
+        // The core reads the totem models of a shaman by exact race; a race of ours shows the totems of its base race.
+        WorldDatabase.DirectExecute("INSERT INTO `player_totem_model` (`TotemID`, `RaceID`, `ModelID`) "
+            "SELECT `TotemID`, {}, `ModelID` FROM `player_totem_model` WHERE `RaceID` = {}", race.Id, race.Base);
         // A race above 32 has no bit of its own: the core gives it the skills and spells of its base race's bit.
         if (bit)
             WorldDatabase.DirectExecute("INSERT IGNORE INTO `playercreateinfo_skills` (`raceMask`, `classMask`, `skill`, `rank`, `comment`) "
@@ -339,6 +419,130 @@ namespace
             CharacterDatabase.DirectExecute("DELETE FROM `custom_races_moved` WHERE `race` = {}", id);
             CharacterDatabase.DirectExecute("DELETE FROM `custom_races_base` WHERE `race` = {}", id);
         }
+    }
+
+    // ---------------------------------------------------------------------------------- the racial rows from the server data folder
+
+    /// The racial rows one race brings, as AFK Realm wrote them (afk-realm\races\<key>.sql of the server data folder):
+    /// the statements to run, and the spell ids they are for - the file names them in a comment line, so that a later
+    /// run can take them back out.
+    struct RacialFile
+    {
+        std::vector<uint32> Spells;
+        std::vector<std::string> Statements;
+    };
+
+    bool ReadRacialFile(std::filesystem::path const& path, RacialFile& file)
+    {
+        std::ifstream in(path);
+        if (!in)
+            return false;
+
+        std::string line;
+        while (std::getline(in, line))
+        {
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+            size_t const first = line.find_first_not_of(" \t");
+            if (first == std::string::npos)
+                continue;
+            line.erase(0, first);
+
+            std::string const marker = "-- spells ";
+            if (line.compare(0, marker.size(), marker) == 0)
+            {
+                file.Spells = SpellIds(line.substr(marker.size()));
+                continue;
+            }
+            if (line.compare(0, 2, "--") == 0)
+                continue;
+            file.Statements.push_back(line);
+        }
+        return !file.Statements.empty();
+    }
+
+    void DropRacialSpell(uint32 spell)
+    {
+        WorldDatabase.DirectExecute("DELETE FROM `spell_dbc` WHERE `ID` = {}", spell);
+        WorldDatabase.DirectExecute("DELETE FROM `spell_script_names` WHERE `spell_id` = {}", spell);
+    }
+
+    /// Runs the racial files of the races that are on and keeps their spells in `custom_races_racials`; the rows of
+    /// races that are off, gone from the settings or no longer in their file are taken back out. Without a server data
+    /// folder nothing is touched on either side - a wrong path must not throw the rows away.
+    void ApplyRacialRows()
+    {
+        WorldDatabase.DirectExecute("CREATE TABLE IF NOT EXISTS `custom_races_racials` (`race` TINYINT UNSIGNED NOT NULL, "
+            "`spell` INT UNSIGNED NOT NULL, PRIMARY KEY (`race`, `spell`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 "
+            "COMMENT='mod-custom-races: racial rows of each race, as taken from the server data folder'");
+
+        std::string const folder = sConfigMgr->GetOption<std::string>("CustomRaces.ServerDataFolder", "", false);
+        if (folder.empty())
+        {
+            LOG_INFO("module", "mod-custom-races: CustomRaces.ServerDataFolder is not set; the races bring no racial rows of their own");
+            return;
+        }
+
+        std::filesystem::path const dir = std::filesystem::path(folder) / "afk-realm" / "races";
+        std::error_code ec;
+        if (!std::filesystem::is_directory(dir, ec))
+        {
+            LOG_WARN("module", "mod-custom-races: {} holds no afk-realm\\races; the races bring no racial rows of their own", folder);
+            return;
+        }
+
+        std::map<uint8, RacialFile> files;
+        for (RaceDef const* race : active)
+        {
+            RacialFile file;
+            if (ReadRacialFile(dir / (race->Key + ".sql"), file) && !file.Spells.empty())
+                files[race->Id] = std::move(file);
+        }
+
+        auto inFile = [&files](uint8 race, uint32 spell)
+        {
+            auto it = files.find(race);
+            return it != files.end() && std::find(it->second.Spells.begin(), it->second.Spells.end(), spell) != it->second.Spells.end();
+        };
+        auto inAnyFile = [&files](uint32 spell)
+        {
+            for (auto const& pair : files)
+                if (std::find(pair.second.Spells.begin(), pair.second.Spells.end(), spell) != pair.second.Spells.end())
+                    return true;
+            return false;
+        };
+
+        uint32 dropped = 0;
+        if (QueryResult rows = WorldDatabase.Query("SELECT `race`, `spell` FROM `custom_races_racials`"))
+            do
+            {
+                uint8 const race = (*rows)[0].Get<uint8>();
+                uint32 const spell = (*rows)[1].Get<uint32>();
+                if (inFile(race, spell))
+                    continue;
+
+                WorldDatabase.DirectExecute("DELETE FROM `custom_races_racials` WHERE `race` = {} AND `spell` = {}", race, spell);
+                if (!inAnyFile(spell))
+                {
+                    DropRacialSpell(spell);
+                    ++dropped;
+                }
+            } while (rows->NextRow());
+
+        uint32 taken = 0;
+        for (auto const& pair : files)
+        {
+            for (std::string const& statement : pair.second.Statements)
+                WorldDatabase.DirectExecute(statement);
+
+            WorldDatabase.DirectExecute("DELETE FROM `custom_races_racials` WHERE `race` = {}", pair.first);
+            for (uint32 spell : pair.second.Spells)
+                WorldDatabase.DirectExecute("REPLACE INTO `custom_races_racials` (`race`, `spell`) VALUES ({}, {})", pair.first, spell);
+            ++taken;
+        }
+
+        if (taken || dropped)
+            LOG_INFO("module", "mod-custom-races: racial rows of {} race(s) taken over from {}, {} spell(s) given back", taken, dir.string(), dropped);
     }
 
     // ---------------------------------------------------------------------------------- what the base race lends
@@ -428,6 +632,9 @@ public:
             if (race->Id > 32)
                 SetRaceBase(race->Id, race->Base);
 
+        // The racial rows the races bring of their own; the core reads the spell tables right after this.
+        ApplyRacialRows();
+
         std::string names;
         for (RaceDef const* race : active)
             names += (names.empty() ? "" : ", ") + race->Name + " (" + std::to_string(race->Id) + ")";
@@ -470,6 +677,26 @@ namespace
         if (race && !race->OwnHelmets)
             player->SetPlayerFlag(PLAYER_FLAGS_HIDE_HELM);
     }
+
+    /// The racials a character knows: the ones of the race it plays, learned at every login; the ones of every other
+    /// race of this realm taken away - so a race switched off takes its racials from its characters at the first
+    /// login. Spells the server does not know (rows not taken over) are left out.
+    void LearnRacials(Player* player)
+    {
+        std::unordered_set<uint32> wanted;
+        for (RaceDef const* race : active)
+            if (race->Id == player->getRace(true))
+                wanted.insert(race->RacialSpells.begin(), race->RacialSpells.end());
+
+        for (RaceDef const& race : races)
+            for (uint32 spell : race.RacialSpells)
+                if (!wanted.count(spell) && player->HasSpell(spell))
+                    player->removeSpell(spell, SPEC_MASK_ALL, false);
+
+        for (uint32 spell : wanted)
+            if (!player->HasSpell(spell) && sSpellMgr->GetSpellInfo(spell))
+                player->learnSpell(spell);
+    }
 }
 
 /// A race without a female model is male: a woman of it has no body. Players cannot choose female for it in the
@@ -477,7 +704,8 @@ namespace
 class CustomRacesPlayer : public PlayerScript
 {
 public:
-    CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS, PLAYERHOOK_ON_LOGIN }) { }
+    CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS, PLAYERHOOK_ON_LOGIN,
+        PLAYERHOOK_ON_LOOT_ITEM }) { }
 
     bool OnPlayerCreateInitialItems(Player* player, bool& /*handled*/) override
     {
@@ -498,13 +726,88 @@ public:
 
     void OnPlayerLogin(Player* player) override
     {
-        if (player)
-            HideHelmet(player);
+        if (!player)
+            return;
+
+        HideHelmet(player);
+        LearnRacials(player);
+    }
+
+    /// Waste Not, Want Not (a racial of the Highmountain Tauren of CoA Custom, ported from its OnPlayerLootItem):
+    /// now and then a second portion of the meat or fish a character gathers.
+    void OnPlayerLootItem(Player* player, Item* item, uint32 /*count*/, ObjectGuid /*lootguid*/) override
+    {
+        ItemTemplate const* proto = item ? item->GetTemplate() : nullptr;
+        if (proto && proto->Class == ITEM_CLASS_TRADE_GOODS && proto->SubClass == ITEM_SUBCLASS_MEAT &&
+            KnowsRacial(player, SPELL_WASTE_NOT_WANT_NOT) && roll_chance_i(WasteNotChance))
+            player->AddItem(proto->ItemId, 1);
+    }
+};
+
+/// The passives of the ported racials, at the hook each needs: Rugged Tenacity lowers every hit by a share of the
+/// character's stamina (OnDamage of race_racials_unit in mod-custom-server's race_racials.cpp).
+class CustomRacesUnit : public UnitScript
+{
+public:
+    CustomRacesUnit() : UnitScript("CustomRacesUnit", true, { UNITHOOK_ON_DAMAGE }) { }
+
+    void OnDamage(Unit* /*attacker*/, Unit* victim, uint32& damage) override
+    {
+        if (!damage || !victim || !victim->IsPlayer() || !KnowsRacial(victim, SPELL_RUGGED_TENACITY))
+            return;
+
+        damage -= std::min(damage, uint32(victim->GetStat(STAT_STAMINA) * RuggedTenacityPerStamina));
+    }
+};
+
+/// Bull Rush (the active racial of the Highmountain Tauren of CoA Custom, ported from its spell_race_bull_rush):
+/// charge forward and knock down every enemy on the way. Bound to its spell by the race's file (spell_script_names).
+class spell_race_bull_rush : public SpellScript
+{
+    PrepareSpellScript(spell_race_bull_rush);
+
+    SpellCastResult CheckCast()
+    {
+        return GetCaster()->HasUnitState(UNIT_STATE_ROOT) ? SPELL_FAILED_ROOTED : SPELL_CAST_OK;
+    }
+
+    void HandleDummy(SpellEffIndex /*effIndex*/)
+    {
+        Unit* caster = GetCaster();
+        float const startX = caster->GetPositionX();
+        float const startY = caster->GetPositionY();
+        Position const dest = caster->GetFirstCollisionPosition(BullRushDistance, 0.0f);
+        float const pathX = dest.GetPositionX() - startX;
+        float const pathY = dest.GetPositionY() - startY;
+        float const pathLengthSq = pathX * pathX + pathY * pathY;
+
+        // Everyone near the path of the charge is knocked down; a point beside it does not count.
+        if (pathLengthSq > 0.01f)
+        {
+            for (Unit* unit : HostilesAround(caster, caster, BullRushDistance + BullRushHitRadius))
+            {
+                float const toX = unit->GetPositionX() - startX;
+                float const toY = unit->GetPositionY() - startY;
+                float const along = std::clamp((toX * pathX + toY * pathY) / pathLengthSq, 0.0f, 1.0f);
+                if (unit->GetExactDist2d(startX + pathX * along, startY + pathY * along) <= BullRushHitRadius)
+                    caster->CastSpell(unit, SPELL_BULL_RUSH_KNOCKDOWN, true);
+            }
+        }
+
+        caster->GetMotionMaster()->MoveCharge(dest.GetPositionX(), dest.GetPositionY(), dest.GetPositionZ(), BullRushSpeed);
+    }
+
+    void Register() override
+    {
+        OnCheckCast += SpellCheckCastFn(spell_race_bull_rush::CheckCast);
+        OnEffectHitTarget += SpellEffectFn(spell_race_bull_rush::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
     }
 };
 
 void AddSC_custom_races()
 {
+    RegisterSpellScript(spell_race_bull_rush);
     new CustomRacesWorld();
     new CustomRacesPlayer();
+    new CustomRacesUnit();
 }

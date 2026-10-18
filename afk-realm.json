@@ -3166,6 +3166,17 @@
       }
      ]
     }
+   ],
+   "rootFolders": [
+    {
+     "from": {
+      "setting": "CustomRaces.ClientRootFolder",
+      "conf": "mod_custom_races.conf",
+      "default": "",
+      "text": true
+     },
+     "zip": false
+    }
    ]
   },
   "why": "The race choice of the character creation shows the races chosen on the setup page (CustomRaces.Races), each with the faction of its base race: the game client already carries their models, skins and hair, and the patch makes them playable for 30 classes, with names, start outfits and the showcase of the classes of Conquest of Azeroth of their base race."
