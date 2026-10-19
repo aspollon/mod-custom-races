@@ -836,6 +836,7 @@ do
 		if race then
 			wasActive = true
 			local row = 0
+			local lastOfFirst
 			for i = 1, MAX do
 				local frame = _G[NAME .. i]
 				local value, count, label = Get(i)
@@ -853,13 +854,26 @@ do
 						end
 					end
 					frame:Show()
+					if column == 0 then
+						lastOfFirst = frame
+					end
 					row = row + 1
 				elseif frame then
 					frame:Hide()
 				end
 			end
+			-- the dice and "Show equipment" hang below the fifth button: they go below the last of the first column
+			local arrow = lastOfFirst and _G[lastOfFirst:GetName() .. "RightButton"]
+			if arrow and CharCreateRandomizeButton then
+				CharCreateRandomizeButton:ClearAllPoints()
+				CharCreateRandomizeButton:SetPoint("TOP", arrow, "BOTTOM", -8, -12)
+			end
 		elseif wasActive then
 			wasActive = nil
+			if CharCreateRandomizeButton and _G[NAME .. "5RightButton"] then
+				CharCreateRandomizeButton:ClearAllPoints()
+				CharCreateRandomizeButton:SetPoint("TOP", _G[NAME .. "5RightButton"], "BOTTOM", -8, 0)
+			end
 			for i = 6, MAX do
 				_G[NAME .. i]:Hide()
 			end
