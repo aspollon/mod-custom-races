@@ -773,24 +773,50 @@ do
 		end
 	end
 
+	-- the customization buttons of the client: Conquest of Azeroth's (CharCreateCustomizationButton1-5, a label in .text),
+	-- or the stock ones of older screens (CharacterCustomizationButtonFrame1-5)
+	local NAME, TEMPLATE, KIND = "CharCreateCustomizationButton", "CharCreateCustomizationButtonTemplate", "CheckButton"
+	if not _G[NAME .. "1"] then
+		NAME, TEMPLATE, KIND = "CharacterCustomizationButtonFrame", "CharacterCustomizationFrameTemplate", "Frame"
+	end
+	local ROWS, STEP, COLUMN = 10, 46, 250
+
+	local function Label(frame)
+		return frame and (frame.text or _G[frame:GetName() .. "Text"])
+	end
+
+	-- where the first button sits in its frame, taken once while the stock layout stands
+	local function Origin()
+		local first = _G[NAME .. "1"]
+		if not first or not saved or saved.x or wasActive then
+			return
+		end
+		local parent = first:GetParent()
+		if first:GetLeft() and parent:GetLeft() then
+			saved.x = first:GetLeft() - parent:GetLeft()
+			saved.y = first:GetTop() - parent:GetTop()
+		end
+	end
+
 	local function Refresh()
-		local first = CharacterCustomizationButtonFrame1
+		local first = _G[NAME .. "1"]
 		if not first then
 			return
 		end
-		if not saved then
-			saved = {}
+		saved = saved or {}
+		if not saved[1] and not wasActive then
 			for i = 1, 5 do
-				local frame = _G["CharacterCustomizationButtonFrame" .. i]
+				local frame = _G[NAME .. i]
 				if frame and frame:GetNumPoints() > 0 then
 					saved[i] = { frame:GetPoint(1) }
 				end
 			end
 		end
+		Origin()
 		local parent = first:GetParent()
 		for i = 6, MAX do
-			if not _G["CharacterCustomizationButtonFrame" .. i] then
-				local frame = CreateFrame("Frame", "CharacterCustomizationButtonFrame" .. i, parent, "CharacterCustomizationFrameTemplate")
+			if not _G[NAME .. i] then
+				local frame = CreateFrame(KIND, NAME .. i, parent, TEMPLATE)
 				frame:SetID(i)
 				frame:Hide()
 			end
@@ -807,46 +833,50 @@ do
 			end
 		end
 		lastRace = race
-		if race and saved[1] then
+		if race then
 			wasActive = true
-			local point, relative, relativePoint, x, y = unpack(saved[1])
 			local row = 0
 			for i = 1, MAX do
-				local frame = _G["CharacterCustomizationButtonFrame" .. i]
+				local frame = _G[NAME .. i]
 				local value, count, label = Get(i)
 				if count and count > 1 then
-					local column = math.floor(row / 12)
+					local column = math.floor(row / ROWS)
 					frame:ClearAllPoints()
-					frame:SetPoint(point, relative, relativePoint, x - column * 260, y - (row % 12) * 36)
+					frame:SetPoint("TOPLEFT", parent, "TOPLEFT", (saved.x or 0) - column * COLUMN, (saved.y or 0) - (row % ROWS) * STEP)
 					local name = NAMED[race] and (label or "") or race == 47 and MECH_LABELS[i] or LABELS[i] or ""
-					if (race == 48 or race == 49) and label == "Belt" then
-						_G["CharacterCustomizationButtonFrame" .. i .. "Text"]:SetText(name .. (value == 0 and "  None" or "  Gem"))
-					else
-						_G["CharacterCustomizationButtonFrame" .. i .. "Text"]:SetText(name .. "  " .. (value + 1) .. "/" .. count)
+					local text = Label(frame)
+					if text then
+						if (race == 48 or race == 49) and label == "Belt" then
+							text:SetText(name .. (value == 0 and "  None" or "  Gem"))
+						else
+							text:SetText(name .. "  " .. (value + 1) .. "/" .. count)
+						end
 					end
-					if first:IsShown() or i == 1 then
-						frame:Show()
-					end
+					frame:Show()
 					row = row + 1
-				else
+				elseif frame then
 					frame:Hide()
 				end
 			end
 		elseif wasActive then
 			wasActive = nil
 			for i = 6, MAX do
-				_G["CharacterCustomizationButtonFrame" .. i]:Hide()
+				_G[NAME .. i]:Hide()
 			end
 			for i = 1, 5 do
-				local frame = _G["CharacterCustomizationButtonFrame" .. i]
+				local frame = _G[NAME .. i]
 				if frame and saved[i] then
 					frame:ClearAllPoints()
 					frame:SetPoint(unpack(saved[i]))
 				end
 			end
-			if CHAR_CUSTOMIZATION1_DESC then CharacterCustomizationButtonFrame1Text:SetText(CHAR_CUSTOMIZATION1_DESC) end
-			if CHAR_CUSTOMIZATION2_DESC then CharacterCustomizationButtonFrame2Text:SetText(CHAR_CUSTOMIZATION2_DESC) end
-			if CharacterCreate_UpdateHairCustomization then CharacterCreate_UpdateHairCustomization() end
+			if CharCreateCustomizationFrame_OnShow then
+				pcall(CharCreateCustomizationFrame_OnShow)
+			else
+				if CHAR_CUSTOMIZATION1_DESC and Label(_G[NAME .. "1"]) then Label(_G[NAME .. "1"]):SetText(CHAR_CUSTOMIZATION1_DESC) end
+				if CHAR_CUSTOMIZATION2_DESC and Label(_G[NAME .. "2"]) then Label(_G[NAME .. "2"]):SetText(CHAR_CUSTOMIZATION2_DESC) end
+			end
+			if CharacterCreate_UpdateHairCustomization then pcall(CharacterCreate_UpdateHairCustomization) end
 		end
 	end
 
