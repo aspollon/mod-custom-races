@@ -1,3 +1,18 @@
+diff --git a/data/sql/updates/pending_db_characters/rev_2026101900000000001_custom_races_extra_appearance.sql b/data/sql/updates/pending_db_characters/rev_2026101900000000001_custom_races_extra_appearance.sql
+new file mode 100644
+index 00000000..b38094d2
+--- /dev/null
++++ b/data/sql/updates/pending_db_characters/rev_2026101900000000001_custom_races_extra_appearance.sql
+@@ -0,0 +1,9 @@
++-- mod-custom-races (its core patch): the looks a race keeps beyond the five bytes of the stock packets
++-- (Highmountain Tauren and Earthen a sixth byte, Haranir a 64-bit number), for EsteriaAppearance.dll of the game
++-- client. Here, in the core's own updates, because the core prepares its statements on this column right after them.
++SET @has := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
++             AND TABLE_NAME = 'characters' AND COLUMN_NAME = 'extraAppearance');
++SET @sql := IF(@has = 0, 'ALTER TABLE `characters` ADD COLUMN `extraAppearance` BIGINT UNSIGNED NOT NULL DEFAULT 0', 'DO 0');
++PREPARE stmt FROM @sql;
++EXECUTE stmt;
++DEALLOCATE PREPARE stmt;
 diff --git a/src/server/coa/AscensionCompat.cpp b/src/server/coa/AscensionCompat.cpp
 index 0708ca0b..dccef8e1 100644
 --- a/src/server/coa/AscensionCompat.cpp
