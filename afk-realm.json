@@ -23,7 +23,7 @@
         "key": "CustomRaces.Races",
         "default": ""
        },
-       "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\", icon = \"{conf:CustomRaces.{each}.Icon}\", height = { \"{height:{conf:CustomRaces.{each}.Id}:0}\", \"{height:{conf:CustomRaces.{each}.Id}:1}\" } } -- @RACES@"
+       "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\", icon = \"{conf:CustomRaces.{each}.Icon}\", id = \"{conf:CustomRaces.{each}.Id}\", height = { \"{height:{conf:CustomRaces.{each}.Id}:0}\", \"{height:{conf:CustomRaces.{each}.Id}:1}\" } } -- @RACES@"
       }
      ]
     }
