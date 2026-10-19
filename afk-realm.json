@@ -3175,7 +3175,7 @@
       "default": "",
       "text": true
      },
-     "zip": false
+     "zip": true
     }
    ]
   },
