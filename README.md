@@ -116,6 +116,8 @@ and their side from the core's race table.
 | `CustomRaces.Races` | (none) | The races that are playable, by key (the English name without spaces), for example `Goblin Worgen Vrykul`. |
 | `CustomRaces.<race>.Base` | by name | The stock race it leans on: start, quests, stats, racial abilities and faction. |
 | `CustomRaces.<race>.Id` | its own | Its race number: its own below 32, otherwise one of the free numbers. |
+| `CustomRaces.HighRaces` | 0 | For the game of CoA Custom (its `Ascension-b.exe`): race numbers up to 127, and its races keep the numbers CoA Custom gave them, which its `EsteriaAppearance.dll` knows them by. |
+| `CustomRaces.<race>.Appearance` | 0 | The looks it keeps beyond the five bytes of the game: 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit number (Haranir). Stored in `characters.extraAppearance` (added by `data/sql/db-characters`), sent with the character list (marks HXE1/HXE2) and to the players nearby, as CoA Custom's server does. |
 | `CustomRaces.<race>.Source`, `.Copy`, `.Name`, `.Prefix`, `.File`, `.MaleDisplay`, `.FemaleDisplay`, `.MaleOnly` | from the client | Its row in the client's ChrRaces.dbc and what it holds; written by the setup page. |
 
 ## Install

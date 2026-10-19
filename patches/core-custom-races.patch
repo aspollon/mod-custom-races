@@ -1,8 +1,8 @@
 diff --git a/src/server/coa/AscensionCompat.cpp b/src/server/coa/AscensionCompat.cpp
-index 839fe9c6..51b22e8c 100644
+index 0708ca0b..dccef8e1 100644
 --- a/src/server/coa/AscensionCompat.cpp
 +++ b/src/server/coa/AscensionCompat.cpp
-@@ -651,7 +651,7 @@ std::vector<uint32> GetAscensionRacialSpells(Player const* player)
+@@ -727,7 +727,7 @@ std::vector<uint32> GetAscensionRacialSpells(Player const* player)
  {
      std::vector<uint32> spells;
      for (auto const& skill : AscensionRacialAbilities::Skills)
@@ -25,7 +25,7 @@ index e1bf8130..7cbfb8bf 100644
                  if (ability->ClassMask && !(ability->ClassMask & (1u << (expected.ClassId - 1))))
                      continue;
 diff --git a/src/server/coa/AscensionRacialAbilities.h b/src/server/coa/AscensionRacialAbilities.h
-index a59ccc5d..8146edeb 100644
+index a59ccc5d..9e0c4960 100644
 --- a/src/server/coa/AscensionRacialAbilities.h
 +++ b/src/server/coa/AscensionRacialAbilities.h
 @@ -87,6 +87,14 @@ inline constexpr std::array<RacialSkill, 12> Skills =
@@ -33,7 +33,7 @@ index a59ccc5d..8146edeb 100644
  }};
  
 +// A race a module made playable that uses the racial abilities of another race (0: none of its own).
-+inline std::array<uint8, 64> BorrowedRacials = {};
++inline std::array<uint8, 128> BorrowedRacials = {};
 +
 +inline uint8 RacialRace(uint8 raceId)
 +{
@@ -51,8 +51,39 @@ index a59ccc5d..8146edeb 100644
      if (!raceId || GetRace(ability.SkillLine) != raceId || !IsAscensionClass(classId))
          return false;
  
+diff --git a/src/server/database/Database/Implementation/CharacterDatabase.cpp b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+index 953e78d7..ef412dd5 100644
+--- a/src/server/database/Database/Implementation/CharacterDatabase.cpp
++++ b/src/server/database/Database/Implementation/CharacterDatabase.cpp
+@@ -238,7 +238,7 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+     PrepareStatement(CHAR_SEL_BANINFO_LIST, "SELECT bandate, unbandate, bannedby, banreason FROM character_banned WHERE guid = ? ORDER BY unbandate", CONNECTION_SYNCH);
+     PrepareStatement(CHAR_SEL_BANNED_NAME, "SELECT characters.name FROM characters, character_banned WHERE character_banned.guid = ? AND character_banned.guid = characters.guid", CONNECTION_SYNCH);
+     PrepareStatement(CHAR_SEL_ENUM, "SELECT c.guid, c.name, c.race, c.class, c.gender, c.skin, c.face, c.hairStyle, c.hairColor, c.facialStyle, c.level, c.zone, c.map, c.position_x, c.position_y, c.position_z, "
+-                     "gm.guildid, c.playerFlags, c.at_login, cp.entry, cp.modelid, cp.level, c.equipmentCache, cb.guid, c.extra_flags "
++                     "gm.guildid, c.playerFlags, c.at_login, cp.entry, cp.modelid, cp.level, c.equipmentCache, cb.guid, c.extra_flags, c.extraAppearance "
+                      "FROM characters AS c LEFT JOIN character_pet AS cp ON c.guid = cp.owner AND cp.slot = ? LEFT JOIN guild_member AS gm ON c.guid = gm.guid "
+                      "LEFT JOIN character_banned AS cb ON c.guid = cb.guid AND cb.active = 1 "
+                      "LEFT JOIN character_ascension_state AS cas ON cas.guid = c.guid "
+@@ -246,7 +246,7 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+                      "ORDER BY COALESCE(c.order, c.guid)", CONNECTION_ASYNC);
+     PrepareStatement(CHAR_SEL_ENUM_DECLINED_NAME, "SELECT c.guid, c.name, c.race, c.class, c.gender, c.skin, c.face, c.hairStyle, c.hairColor, c.facialStyle, c.level, c.zone, c.map, "
+                      "c.position_x, c.position_y, c.position_z, gm.guildid, c.playerFlags, c.at_login, cp.entry, cp.modelid, cp.level, c.equipmentCache, "
+-                     "cb.guid, c.extra_flags, cd.genitive FROM characters AS c LEFT JOIN character_pet AS cp ON c.guid = cp.owner AND cp.slot = ? "
++                     "cb.guid, c.extra_flags, cd.genitive, c.extraAppearance FROM characters AS c LEFT JOIN character_pet AS cp ON c.guid = cp.owner AND cp.slot = ? "
+                      "LEFT JOIN character_declinedname AS cd ON c.guid = cd.guid LEFT JOIN guild_member AS gm ON c.guid = gm.guid "
+                      "LEFT JOIN character_banned AS cb ON c.guid = cb.guid AND cb.active = 1 "
+                      "LEFT JOIN character_ascension_state AS cas ON cas.guid = c.guid "
+@@ -274,7 +274,7 @@ void CharacterDatabaseConnection::DoPrepareStatements()
+                      "resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, instance_mode_mask, "
+                      "arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk, "
+                      "health, power1, power2, power3, power4, power5, power6, power7, instance_id, talentGroupsCount, activeTalentGroup, exploredZones, equipmentCache, ammoId, "
+-                     "knownTitles, actionBars, grantableLevels, innTriggerId, extraBonusTalentCount, UNIX_TIMESTAMP(creation_date) FROM characters WHERE guid = ?", CONNECTION_ASYNC);
++                     "knownTitles, actionBars, grantableLevels, innTriggerId, extraBonusTalentCount, UNIX_TIMESTAMP(creation_date), extraAppearance FROM characters WHERE guid = ?", CONNECTION_ASYNC);
+ 
+     PrepareStatement(CHAR_SEL_CHARACTER_AURAS, "SELECT casterGuid, itemGuid, spell, effectMask, recalculateMask, stackCount, amount0, amount1, amount2, "
+                      "base_amount0, base_amount1, base_amount2, maxDuration, remainTime, remainCharges FROM character_aura WHERE guid = ?", CONNECTION_ASYNC);
 diff --git a/src/server/game/Achievements/AchievementMgr.cpp b/src/server/game/Achievements/AchievementMgr.cpp
-index c894de7e..39f5bfd5 100644
+index 19cdb5b7..896f6967 100644
 --- a/src/server/game/Achievements/AchievementMgr.cpp
 +++ b/src/server/game/Achievements/AchievementMgr.cpp
 @@ -118,7 +118,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
@@ -74,7 +105,7 @@ index c894de7e..39f5bfd5 100644
                  LOG_ERROR("sql.sql", "Table `achievement_criteria_data` (Entry: {} Type: {}) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_S_PLAYER_CLASS_RACE ({}) has non-existing race in value2 ({}), ignored.",
                                   criteria->ID, criteria->requiredType, dataType, classRace.race_id);
 diff --git a/src/server/game/DataStores/DBCStores.cpp b/src/server/game/DataStores/DBCStores.cpp
-index 98db8476..fdca2492 100644
+index 4704b206..9defa14d 100644
 --- a/src/server/game/DataStores/DBCStores.cpp
 +++ b/src/server/game/DataStores/DBCStores.cpp
 @@ -25,6 +25,7 @@
@@ -94,7 +125,7 @@ index 98db8476..fdca2492 100644
              sCharSectionMap.insert({ charSection->GenType | (charSection->Gender << 8) | (charSection->Race << 16), charSection });
  
      std::vector<FactionEntry*> factions;
-@@ -936,8 +937,32 @@ uint32 GetLiquidFlags(uint32 liquidType)
+@@ -936,8 +937,46 @@ uint32 GetLiquidFlags(uint32 liquidType)
      return 0;
  }
  
@@ -103,7 +134,21 @@ index 98db8476..fdca2492 100644
 +// the build stays short.
 +void SetRaceBase(uint8 race, uint8 base);
 +
-+static std::array<uint8, 64> sRaceBase = {};
++static std::array<uint8, 128> sRaceBase = {};
++static std::array<uint8, 128> sExtraAppearance = {};
++
++void SetExtraAppearanceKind(uint8 race, uint8 kind);
++
++void SetExtraAppearanceKind(uint8 race, uint8 kind)
++{
++    if (race < sExtraAppearance.size())
++        sExtraAppearance[race] = kind <= 2 ? kind : 0;
++}
++
++uint8 ExtraAppearanceKind(uint8 race)
++{
++    return race < sExtraAppearance.size() ? sExtraAppearance[race] : 0;
++}
 +
 +void SetRaceBase(uint8 race, uint8 base)
 +{
@@ -127,7 +172,7 @@ index 98db8476..fdca2492 100644
      std::map<uint32, CharStartOutfitEntry const*>::const_iterator itr = sCharStartOutfitMap.find(race | (class_ << 8) | (gender << 16));
      if (itr == sCharStartOutfitMap.end())
          return nullptr;
-@@ -1003,10 +1028,12 @@ uint32 GetDefaultMapLight(uint32 mapId)
+@@ -1003,10 +1042,12 @@ uint32 GetDefaultMapLight(uint32 mapId)
  
  SkillRaceClassInfoEntry const* GetSkillRaceClassInfo(uint32 skill, uint8 race, uint8 class_)
  {
@@ -141,11 +186,80 @@ index 98db8476..fdca2492 100644
          {
              continue;
          }
+diff --git a/src/server/game/Entities/Object/Updates/UpdateFieldFlags.cpp b/src/server/game/Entities/Object/Updates/UpdateFieldFlags.cpp
+index 149ca6da..9fdb4de4 100644
+--- a/src/server/game/Entities/Object/Updates/UpdateFieldFlags.cpp
++++ b/src/server/game/Entities/Object/Updates/UpdateFieldFlags.cpp
+@@ -166,7 +166,7 @@ uint32 UnitUpdateFieldFlags[PLAYER_END] =
+     UF_FLAG_PUBLIC,                                         // OBJECT_FIELD_TYPE
+     UF_FLAG_PUBLIC,                                         // OBJECT_FIELD_ENTRY
+     UF_FLAG_PUBLIC,                                         // OBJECT_FIELD_SCALE_X
+-    UF_FLAG_NONE,                                           // OBJECT_FIELD_PADDING
++    UF_FLAG_PUBLIC,                                         // OBJECT_FIELD_PADDING: mod-custom-races, high half of a Haranir's looks
+     UF_FLAG_PUBLIC,                                         // UNIT_FIELD_CHARM
+     UF_FLAG_PUBLIC,                                         // UNIT_FIELD_CHARM+1
+     UF_FLAG_PUBLIC,                                         // UNIT_FIELD_SUMMON
+@@ -308,7 +308,7 @@ uint32 UnitUpdateFieldFlags[PLAYER_END] =
+     UF_FLAG_PRIVATE | UF_FLAG_OWNER,                        // UNIT_FIELD_POWER_COST_MULTIPLIER+6
+     UF_FLAG_PRIVATE | UF_FLAG_OWNER,                        // UNIT_FIELD_MAXHEALTHMODIFIER
+     UF_FLAG_PUBLIC,                                         // UNIT_FIELD_HOVERHEIGHT
+-    UF_FLAG_NONE,                                           // UNIT_FIELD_PADDING
++    UF_FLAG_PUBLIC,                                         // UNIT_FIELD_PADDING: mod-custom-races, the looks beyond the five bytes
+     UF_FLAG_PUBLIC,                                         // PLAYER_DUEL_ARBITER
+     UF_FLAG_PUBLIC,                                         // PLAYER_DUEL_ARBITER+1
+     UF_FLAG_PUBLIC,                                         // PLAYER_FLAGS
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index f832d9ca..7eb7052f 100644
+index 688c3376..c2319032 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -11272,16 +11272,22 @@ void Player::InitDisplayIds()
+@@ -193,6 +193,38 @@ static uint32 copseReclaimDelay[MAX_DEATH_COUNT] = { 30, 60, 120 };
+ #ifdef _MSC_VER
+ #pragma warning(disable:4355)
+ #endif
++// mod-custom-races: the looks a race keeps beyond the five bytes of the stock packets, for EsteriaAppearance.dll of the
++// game client: 0 none, 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit number (Haranir). Saved in
++// characters.extraAppearance, carried in UNIT_FIELD_PADDING (the high half in OBJECT_FIELD_PADDING). Declared here and
++// not in a header, so that the change compiles only the files that use it. In DBCStores.cpp.
++uint8 ExtraAppearanceKind(uint8 race);
++
++namespace
++{
++    void SetExtraAppearance(Player* player, uint8 kind, uint64 value)
++    {
++        if (kind == 1)
++            player->SetByteValue(UNIT_FIELD_PADDING, 0, uint8(value));
++        else if (kind == 2)
++        {
++            player->SetUInt32Value(UNIT_FIELD_PADDING, uint32(value));
++            player->SetUInt32Value(OBJECT_FIELD_PADDING, uint32(value >> 32));
++        }
++    }
++
++    uint64 GetExtraAppearance(Player const* player, uint8 kind)
++    {
++        if (kind == 1)
++            return player->GetByteValue(UNIT_FIELD_PADDING, 0);
++        if (kind == 2)
++            return uint64(player->GetUInt32Value(UNIT_FIELD_PADDING)) | (uint64(player->GetUInt32Value(OBJECT_FIELD_PADDING)) << 32);
++        return 0;
++    }
++}
++
++// The looks a new character brought beyond the five bytes; CharacterHandler.cpp keeps them for its creation.
++uint64 TakeCreatedExtraAppearance(CharacterCreateInfo const* createInfo);
++
+ Player::Player(WorldSession* session): Unit(), m_mover(this), _cinematicMgr(*this)
+ {
+ #ifdef _MSC_VER
+@@ -592,6 +624,7 @@ bool Player::Create(ObjectGuid::LowType guidlow, CharacterCreateInfo* createInfo
+                                     (0x00 << 16) |
+                                     (((GetSession()->IsARecruiter() || GetSession()->GetRecruiterId() != 0) ? REST_STATE_RAF_LINKED : REST_STATE_NOT_RAF_LINKED) << 24)));
+     SetByteValue(PLAYER_BYTES_3, 0, createInfo->Gender);
++    SetExtraAppearance(this, ExtraAppearanceKind(createInfo->Race), TakeCreatedExtraAppearance(createInfo));   // mod-custom-races
+     SetByteValue(PLAYER_BYTES_3, 3, 0);                     // BattlefieldArenaFaction (0 or 1)
+ 
+     SetUInt32Value(PLAYER_GUILDID, 0);
+@@ -11300,16 +11333,22 @@ void Player::InitDisplayIds()
          return;
      }
  
@@ -172,6 +286,57 @@ index f832d9ca..7eb7052f 100644
              break;
          default:
              LOG_ERROR("entities.player", "Invalid gender {} for player", gender);
+@@ -16046,6 +16085,10 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
+     }
+ 
+     trans->Append(stmt);
++
++    // mod-custom-races: the looks beyond the five bytes (a race of EsteriaAppearance.dll)
++    if (uint8 const kind = ExtraAppearanceKind(getRace(true)))
++        trans->Append("UPDATE characters SET extraAppearance = {} WHERE guid = {}", GetExtraAppearance(this, kind), GetGUID().GetCounter());
+ }
+ 
+ void Player::_LoadGlyphs(PreparedQueryResult result)
+diff --git a/src/server/game/Entities/Player/PlayerStorage.cpp b/src/server/game/Entities/Player/PlayerStorage.cpp
+index 88aa170a..e43ad279 100644
+--- a/src/server/game/Entities/Player/PlayerStorage.cpp
++++ b/src/server/game/Entities/Player/PlayerStorage.cpp
+@@ -5030,6 +5030,26 @@ bool Player::isBeingLoaded() const
+     return GetSession()->PlayerLoading();
+ }
+ 
++// mod-custom-races: the looks a race keeps beyond the five bytes of the stock packets, for EsteriaAppearance.dll of the
++// game client: 0 none, 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit number (Haranir). Saved in
++// characters.extraAppearance, carried in UNIT_FIELD_PADDING (the high half in OBJECT_FIELD_PADDING). Declared here and
++// not in a header, so that the change compiles only the files that use it. In DBCStores.cpp.
++uint8 ExtraAppearanceKind(uint8 race);
++
++namespace
++{
++    void SetExtraAppearance(Player* player, uint8 kind, uint64 value)
++    {
++        if (kind == 1)
++            player->SetByteValue(UNIT_FIELD_PADDING, 0, uint8(value));
++        else if (kind == 2)
++        {
++            player->SetUInt32Value(UNIT_FIELD_PADDING, uint32(value));
++            player->SetUInt32Value(OBJECT_FIELD_PADDING, uint32(value >> 32));
++        }
++    }
++}
++
+ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder const& holder)
+ {
+     ////                                                     0     1        2     3     4        5      6    7      8     9    10    11         12         13           14         15         16
+@@ -5141,6 +5161,8 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
+     SetByteValue(PLAYER_BYTES_2, 3, fields[15].Get<uint8>());
+     SetByteValue(PLAYER_BYTES_3, 0, fields[5].Get<uint8>());
+     SetByteValue(PLAYER_BYTES_3, 1, fields[54].Get<uint8>());
++    // mod-custom-races: the looks beyond the five bytes, the last column (extraAppearance)
++    SetExtraAppearance(this, ExtraAppearanceKind(fields[3].Get<uint8>()), fields[result->GetFieldCount() - 1].Get<uint64>());
+     ReplaceAllPlayerFlags((PlayerFlags)fields[16].Get<uint32>());
+ 
+     RemovePlayerFlag(PLAYER_FLAGS_NO_PLAY_TIME);
 diff --git a/src/server/game/Entities/Player/RaceMgr.cpp b/src/server/game/Entities/Player/RaceMgr.cpp
 index b1ac288c..e136e607 100644
 --- a/src/server/game/Entities/Player/RaceMgr.cpp
@@ -250,10 +415,133 @@ index 05aa2c41..c5b6835f 100644
  
      for (int i = 0; i < 4; i++)
 diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
-index c8c7879e..89c72826 100644
+index c9a250b6..8570fcf9 100644
 --- a/src/server/game/Handlers/CharacterHandler.cpp
 +++ b/src/server/game/Handlers/CharacterHandler.cpp
-@@ -335,7 +335,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recvData)
+@@ -65,6 +65,8 @@
+ #include "WorldPacket.h"
+ #include "WorldSession.h"
+ #include "WorldSessionMgr.h"
++#include <mutex>
++#include <unordered_map>
+ 
+ LoginQueryHolder::LoginQueryHolder(uint32 accountId, ObjectGuid guid) : m_accountId(accountId), m_guid(guid)
+ {
+@@ -220,11 +222,45 @@ bool LoginQueryHolder::Initialize()
+     return res;
+ }
+ 
++// mod-custom-races: the looks a race keeps beyond the five bytes (see Player.cpp). ExtraAppearanceKind is in DBCStores.cpp;
++// the looks a new character brings wait here until Player::Create takes them (not in CharacterCreateInfo, whose header
++// nearly the whole core includes).
++uint8 ExtraAppearanceKind(uint8 race);
++
++namespace
++{
++    std::mutex sCreatedExtraLock;
++    std::unordered_map<CharacterCreateInfo const*, uint64> sCreatedExtra;
++
++    void KeepCreatedExtraAppearance(CharacterCreateInfo const* createInfo, uint64 value)
++    {
++        std::lock_guard<std::mutex> guard(sCreatedExtraLock);
++        sCreatedExtra[createInfo] = value;
++    }
++}
++
++uint64 TakeCreatedExtraAppearance(CharacterCreateInfo const* createInfo)
++{
++    std::lock_guard<std::mutex> guard(sCreatedExtraLock);
++    auto found = sCreatedExtra.find(createInfo);
++    if (found == sCreatedExtra.end())
++        return 0;
++    uint64 const value = found->second;
++    sCreatedExtra.erase(found);
++    return value;
++}
++
+ void WorldSession::HandleCharEnum(PreparedQueryResult result)
+ {
+     WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
+ 
+     uint8 num = 0;
++    // mod-custom-races: the looks beyond the five bytes, after the stock list, for EsteriaAppearance.dll of the client
++    // (it takes them off before the game reads the list): HXE1 a byte per character, HXE2 a 64-bit number
++    ByteBuffer extraBytes;
++    uint32 extraByteCount = 0;
++    ByteBuffer extraWide;
++    uint32 extraWideCount = 0;
+ 
+     data << num;
+ 
+@@ -239,11 +275,35 @@ void WorldSession::HandleCharEnum(PreparedQueryResult result)
+             {
+                 _legitCharacters.insert(guid);
+                 ++num;
++                uint64 const extra = (*result)[result->GetFieldCount() - 1].Get<uint64>();
++                switch (ExtraAppearanceKind((*result)[2].Get<uint8>()))
++                {
++                    case 1:
++                        extraBytes << guid.GetRawValue() << uint8(extra);
++                        ++extraByteCount;
++                        break;
++                    case 2:
++                        extraWide << guid.GetRawValue() << extra;
++                        ++extraWideCount;
++                        break;
++                    default:
++                        break;
++                }
+             }
+         } while (result->NextRow());
+     }
+ 
+     data.put<uint8>(0, num);
++    if (extraByteCount)
++    {
++        data.append(extraBytes);
++        data << extraByteCount << uint32(0x31455848);   // HXE1
++    }
++    if (extraWideCount)
++    {
++        data.append(extraWide);
++        data << extraWideCount << uint32(0x32455848);   // HXE2
++    }
+ 
+     SendPacket(&data);
+ }
+@@ -280,6 +340,31 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recvData)
+              >> createInfo->FacialHair
+              >> createInfo->OutfitId;
+ 
++    // mod-custom-races: a race of EsteriaAppearance.dll keeps more of its looks: Highmountain Tauren and Earthen a sixth
++    // byte (the outfit byte, unused by the core), Haranir a 64-bit number and the mark HRC1 after the packet. A game
++    // client without the DLL sends neither; the character then has the first choice of each.
++    switch (ExtraAppearanceKind(createInfo->Race))
++    {
++        case 1:
++            KeepCreatedExtraAppearance(createInfo.get(), createInfo->OutfitId);
++            break;
++        case 2:
++        {
++            uint64 extra = 0;
++            if (recvData.size() - recvData.rpos() == 12)
++            {
++                uint32 mark = 0;
++                recvData >> extra >> mark;
++                if (mark != 0x31435248)
++                    extra = 0;
++            }
++            KeepCreatedExtraAppearance(createInfo.get(), extra);
++            break;
++        }
++        default:
++            break;
++    }
++
+     if (createInfo->Class == 10 && IsAscensionCompatEnabled() &&
+         sConfigMgr->GetOption<bool>("CoA.MapClass10ToWarrior", false))
+     {
+@@ -336,7 +421,7 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recvData)
      if (!HasPermission(rbac::RBAC_PERM_SKIP_CHECK_CHARACTER_CREATION_RACEMASK))
      {
          uint32 raceMaskDisabled = sWorld->getIntConfig(CONFIG_CHARACTER_CREATING_DISABLED_RACEMASK);
@@ -262,7 +550,7 @@ index c8c7879e..89c72826 100644
          {
              SendCharCreate(CHAR_CREATE_DISABLED);
              return;
-@@ -2117,7 +2117,7 @@ void WorldSession::HandleCharFactionOrRaceChangeCallback(std::shared_ptr<Charact
+@@ -2123,7 +2208,7 @@ void WorldSession::HandleCharFactionOrRaceChangeCallback(std::shared_ptr<Charact
  
          for (uint8 i = 0; i < 2; ++i) // check both neutral and faction-specific AH
          {
@@ -271,7 +559,7 @@ index c8c7879e..89c72826 100644
  
              for (auto const& [auID, Aentry] : auctionHouse->GetAuctions())
              {
-@@ -2166,7 +2166,7 @@ void WorldSession::HandleCharFactionOrRaceChangeCallback(std::shared_ptr<Charact
+@@ -2172,7 +2257,7 @@ void WorldSession::HandleCharFactionOrRaceChangeCallback(std::shared_ptr<Charact
      if (!HasPermission(rbac::RBAC_PERM_SKIP_CHECK_CHARACTER_CREATION_RACEMASK))
      {
          uint32 raceMaskDisabled = sWorld->getIntConfig(CONFIG_CHARACTER_CREATING_DISABLED_RACEMASK);

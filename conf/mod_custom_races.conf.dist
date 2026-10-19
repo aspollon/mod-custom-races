@@ -66,13 +66,27 @@ CustomRaces.MoreRaces = 0
 CustomRaces.MoreRacesFile = ""
 
 #
+#    CustomRaces.HighRaces
+#        Description: Race numbers up to 127, for the game of CoA Custom: its own exe (Ascension-b.exe, which every
+#                     player starts instead of Ascension.exe) knows the races it adds under the numbers it gave
+#                     them, up to 103 - Highmountain Tauren 66, Mechagnome 67, Earthen 68/69, Haranir 70/71 and so
+#                     on. A race of the client then keeps its own number (no copy), and EsteriaAppearance.dll of
+#                     CoA Custom, which knows its races by those numbers, gives them all their choices of looks.
+#                     AFK Realm switches it on with "Races of CoA Custom's game" on the setup page.
+#        Default:     0 - Off (up to 63)
+#                     1 - On
+#
+
+CustomRaces.HighRaces = 0
+
+#
 #    CustomRaces.ClientRootFolder
 #        Description: The files of CoA Custom that belong next to Ascension.exe: its folder files\client_root
 #                     (Ascension-b.exe, EsteriaAppearance.dll with its .bin files, cursors). AFK Realm copies all
 #                     of them next to the game when it installs the client patch (Modules > Game client > Install)
 #                     and takes them away again when this is emptied; a file of the same name that was there
-#                     before is kept as <name>.afk-backup. They do not go into the ZIP for the other players,
-#                     who have the client of CoA Custom themselves. Not read by the server.
+#                     before is kept as <name>.afk-backup. They go into the ZIP for the other players as
+#                     well. Not read by the server.
 #        Default:     ""
 #
 
@@ -94,7 +108,8 @@ CustomRaces.RacialsFolder = ""
 #    The options of each race, <race> being its key. The setup page of AFK Realm writes them from the game client.
 #
 #    CustomRaces.<race>.Source        The race's row in ChrRaces.dbc of the client: where its looks come from.
-#    CustomRaces.<race>.Id            Its race number on this realm, 1 to 31, or up to 63 with CustomRaces.MoreRaces:
+#    CustomRaces.<race>.Id            Its race number on this realm, 1 to 31, up to 63 with CustomRaces.MoreRaces, up to
+#                                     127 with CustomRaces.HighRaces (where a race of the client keeps its own number):
 #                                     its row's own number when that is below 32, otherwise a free number (one
 #                                     no row of ChrRaces.dbc has; 14, 15, 17, 18, 21-31 in the CoA client). It
 #                                     keeps it while switched off, so its characters get their race back; 0 gives
@@ -109,6 +124,9 @@ CustomRaces.RacialsFolder = ""
 #    CustomRaces.<race>.OwnHelmets    1: the client has helmet models for it. 0: it would show a placeholder for
 #                                     every helmet, so its characters (players and bots) keep helmets hidden.
 #    CustomRaces.<race>.Import        1: the race comes from the race folder (its rows and files), 0: from the client.
+#    CustomRaces.<race>.Appearance    The looks it keeps beyond the five bytes of the game, for EsteriaAppearance.dll of
+#                                     CoA Custom: 0 none, 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit
+#                                     number (Haranir). Saved in characters.extraAppearance. AFK Realm sets it.
 #    CustomRaces.<race>.Icon          Its icon on the race choice (Interface\Icons\...), and IconFile, the file of it.
 #    CustomRaces.ImportFolder         The race folder: one folder per race, each with race.json and files\.
 #    CustomRaces.<race>.Base          The stock race it leans on, by name: Human, Orc, Dwarf, NightElf, Undead,

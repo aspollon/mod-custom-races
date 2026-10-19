@@ -59,6 +59,8 @@
 // may have the skills that race may have. Declared here rather than in DBCStores.h, which nearly every file of the
 // core includes - a header the patch changed would make every build of the server compile almost all of it again.
 void SetRaceBase(uint8 race, uint8 base);
+// The looks a race keeps beyond the five bytes (0 none, 1 a sixth byte, 2 a 64-bit number), for EsteriaAppearance.dll.
+void SetExtraAppearanceKind(uint8 race, uint8 kind);
 
 namespace
 {
@@ -99,6 +101,7 @@ namespace
         uint8 Base = 1;
         bool MaleOnly = false;
         bool OwnHelmets = true;                          // the client has helmet models for it
+        uint8 Appearance = 0;                            // CustomRaces.<race>.Appearance: looks beyond the five bytes
         std::vector<uint32> RacialSpells;                // CustomRaces.<race>.Racials: what its characters learn
     };
 
@@ -120,9 +123,13 @@ namespace
         return nullptr;
     }
 
-    /// A race number the module may use: 1 to 63, none of the stock races. Numbers above 31 need the 64-race patch
-    /// of the game client (CustomRaces.MoreRaces); without it the client cannot show them.
-    bool Usable(uint32 id) { return id >= 1 && id <= 63 && !FindBase(uint8(id)); }
+    /// The highest race number: 63, or 127 for the game of CoA Custom (CustomRaces.HighRaces) - its own exe knows the
+    /// race numbers it gives its races, up to 103.
+    uint32 MaxRace() { return sConfigMgr->GetOption<bool>("CustomRaces.HighRaces", false) ? 127 : 63; }
+
+    /// A race number the module may use: 1 to MaxRace(), none of the stock races. Numbers above 31 need the 64-race
+    /// patch of the game client (CustomRaces.MoreRaces) or CoA Custom's game; without them the client cannot show them.
+    bool Usable(uint32 id) { return id >= 1 && id <= MaxRace() && !FindBase(uint8(id)); }
 
     std::string Lower(std::string text)
     {
@@ -212,12 +219,13 @@ namespace
             race.MaleOnly = Number(race.Key, "MaleOnly") != 0;
             race.OwnHelmets = Number(race.Key, "OwnHelmets", 1) != 0;
             race.RacialSpells = SpellIds(Text(race.Key, "Racials"));
+            race.Appearance = uint8(std::min<uint32>(Number(race.Key, "Appearance"), 2));
             race.Base = ParseBase(race);
 
             uint32 const id = Number(race.Key, "Id", race.Source < 32 ? race.Source : 0);
             if (id && !Usable(id))
-                LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which no new race can have (1 to 63, not a stock race); "
-                    "the {} stays off", race.Key, id, race.Name);
+                LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which no new race can have (1 to {}, not a stock race); "
+                    "the {} stays off", race.Key, id, MaxRace(), race.Name);
             else if (id && taken.count(uint8(id)))
                 LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which another race has; the {} stays off", race.Key, id, race.Name);
             else if (id)
@@ -249,7 +257,8 @@ namespace
             else if (!found->Id)
                 LOG_WARN("module", "mod-custom-races: {} is in CustomRaces.Races but has no race number (CustomRaces.{}.Id); it stays off",
                     found->Name, found->Key);
-            else if (found->Id > 31 && !sConfigMgr->GetOption<bool>("CustomRaces.MoreRaces", false))
+            else if (found->Id > 31 && !sConfigMgr->GetOption<bool>("CustomRaces.MoreRaces", false)
+                && !sConfigMgr->GetOption<bool>("CustomRaces.HighRaces", false))
                 LOG_WARN("module", "mod-custom-races: {} has race number {}, above 31, but CustomRaces.MoreRaces is off; it stays off",
                     found->Name, found->Id);
             else if (std::find(wanted.begin(), wanted.end(), found) == wanted.end())
@@ -362,7 +371,7 @@ namespace
     /// characters stay the base race they had for good, and its rows go.
     void FreeNumbers()
     {
-        for (uint8 id = 1; id < 64; ++id)
+        for (uint8 id = 1; id < 128; ++id)
         {
             if (!Usable(id))
                 continue;
@@ -722,11 +731,13 @@ public:
         {
             AscensionRacialAbilities::BorrowedRacials[race] = 0;
             SetRaceBase(race, 0);
+            SetExtraAppearanceKind(race, 0);
         }
         for (RaceDef const* race : active)
         {
             AscensionRacialAbilities::BorrowedRacials[race->Id] = race->Base;
             SetRaceBase(race->Id, race->Base);
+            SetExtraAppearanceKind(race->Id, race->Appearance);
             LendMasks(*race);
         }
     }
