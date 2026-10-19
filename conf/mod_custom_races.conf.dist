@@ -15,8 +15,8 @@
 # Everything can be taken back: a race switched off (or the module) leaves no rows behind, and its characters play
 # their base race until it is switched on again - then they get their race and looks back.
 #
-# A race may also bring racial abilities of its own; the rows of those spells the module takes from the server data
-# folder of the server pack (CustomRaces.ServerDataFolder, CustomRaces.<race>.Racials below).
+# A race may also bring racial abilities of its own (CustomRaces.<race>.Racials below). AFK Realm writes the rows of
+# those spells into CustomRaces.RacialsFolder; CoA Custom's races need no server data folder for that.
 #
 # A race also speaks with the voice of its base race: at the emotes (/silly, /joke and so on) the server sends that
 # voice, for the game client plays voices for the stock races only - for a race of ours it has none. The rows are
@@ -119,11 +119,11 @@ CustomRaces.RacialsFolder = ""
 #                                     ..."): every one is learned at every login, and taken away at login from
 #                                     characters that do not play the race. The rows of these spells (spell_dbc and
 #                                     spell_script_names) the module takes over at every start from the .sql AFK
-#                                     Realm writes for the race into afk-realm\races of CustomRaces.ServerDataFolder,
-#                                     and gives back when the race goes off again.
-#    CustomRaces.ServerDataFolder     The server data folder of the server pack (Modules > Custom races > Server
-#                                     data): where the races' racial rows are read from. Without it no race brings
-#                                     any.
+#                                     Realm writes for the race into CustomRaces.RacialsFolder, and gives back when
+#                                     the race goes off again.
+#    CustomRaces.ServerDataFolder     Optional: the server data folder of a server pack that keeps the racial rows of
+#                                     its races in a folder of its own (Modules > Custom races > Server data). Empty
+#                                     for CoA Custom: its races bring their racials without it.
 #
 #    Example (the Goblin of the CoA client):
 #
