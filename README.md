@@ -74,6 +74,7 @@ Each race leans on a stock race, its **base race** (`CustomRaces.<race>.Base`, a
 - **Start**: where a new character of its base race starts, with its first items and action bars.
 - **Faction**: that of its base race. A Goblin leaning on the Human plays for the Alliance.
 - **Stats and racial abilities**: those of its base race, and the racial abilities of CoA its base race gets.
+- **CoA Custom's racial abilities**: CoA Custom has them compiled into its server (`CoaCustomRacials.h`), so this module carries the table in `races.json` (`coaCustom`, made by `tools/coa_custom_racials.py` from CoA Custom's source). AFK Realm gives each race the racials CoA Custom gives its race number and writes the rows of those spells - from the server data folder, the race folder or the game client - into `CustomRaces.RacialsFolder`. Racials that need code of CoA Custom's server (`scripted`) are named in AFK Realm; Bull Rush is ported, the others do nothing yet.
 - **Quests, items, reputations and skills**: whatever its base race may do, the new race may do too. This is lent in
   memory when the server starts; the world database is not changed for it.
 - **Outfits**: the start outfits of its base race, and in the character creation the showcase of the classes of CoA.

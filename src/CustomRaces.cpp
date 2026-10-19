@@ -477,18 +477,21 @@ namespace
             "`spell` INT UNSIGNED NOT NULL, PRIMARY KEY (`race`, `spell`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 "
             "COMMENT='mod-custom-races: racial rows of each race, as taken from the server data folder'");
 
+        // Where AFK Realm wrote the files: CustomRaces.RacialsFolder (it writes it there since it reads the racials of CoA
+        // Custom), or else afk-realm\\races of the server data folder, as before.
+        std::string const own = sConfigMgr->GetOption<std::string>("CustomRaces.RacialsFolder", "", false);
         std::string const folder = sConfigMgr->GetOption<std::string>("CustomRaces.ServerDataFolder", "", false);
-        if (folder.empty())
+        if (own.empty() && folder.empty())
         {
-            LOG_INFO("module", "mod-custom-races: CustomRaces.ServerDataFolder is not set; the races bring no racial rows of their own");
+            LOG_INFO("module", "mod-custom-races: neither CustomRaces.RacialsFolder nor CustomRaces.ServerDataFolder is set; the races bring no racial rows of their own");
             return;
         }
 
-        std::filesystem::path const dir = std::filesystem::path(folder) / "afk-realm" / "races";
+        std::filesystem::path const dir = !own.empty() ? std::filesystem::path(own) : std::filesystem::path(folder) / "afk-realm" / "races";
         std::error_code ec;
         if (!std::filesystem::is_directory(dir, ec))
         {
-            LOG_WARN("module", "mod-custom-races: {} holds no afk-realm\\races; the races bring no racial rows of their own", folder);
+            LOG_WARN("module", "mod-custom-races: {} is no folder of racial rows; the races bring no racial rows of their own", dir.string());
             return;
         }
 

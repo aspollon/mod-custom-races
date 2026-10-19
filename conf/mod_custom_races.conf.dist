@@ -79,6 +79,18 @@ CustomRaces.MoreRacesFile = ""
 CustomRaces.ClientRootFolder = ""
 
 #
+#    CustomRaces.RacialsFolder
+#        Description: Where AFK Realm writes the racial rows of the races (one .sql per race: the rows of
+#                     their racial spells, from the server data folder, the game client or the race
+#                     folder). The server runs the file of each race that is on at every start and takes
+#                     the rows back out when the race goes off. Empty: afk-realm\races of
+#                     CustomRaces.ServerDataFolder, as before.
+#        Default:     ""
+#
+
+CustomRaces.RacialsFolder = ""
+
+#
 #    The options of each race, <race> being its key. The setup page of AFK Realm writes them from the game client.
 #
 #    CustomRaces.<race>.Source        The race's row in ChrRaces.dbc of the client: where its looks come from.
