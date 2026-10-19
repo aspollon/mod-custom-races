@@ -6,8 +6,10 @@
  */
 
 void AddSC_custom_races();
+void AddSC_coa_custom_racials();
 
 void Addmod_custom_racesScripts()
 {
     AddSC_custom_races();
+    AddSC_coa_custom_racials();
 }

@@ -9,7 +9,9 @@ into races.json, where AFK Realm finds it:
   "coaCustom": { "source": "...", "racials": { "<race number>": [spell, ...] }, "scripted": [spell, ...] }
 
 "scripted": the racials whose working needs code of CoA Custom's server (src/server/coa/EsteriaRacials/*.cpp names
-them); the others are plain spell rows and work with their rows alone.
+them); the others are plain spell rows and work with their rows alone. "ported": src/coa_racials of this module has that
+code. "rows": CoA Custom's rows for them (its files/sql/10_esteria_racials_*.sql of the server pack: spell_dbc,
+spell_script_names, spell_proc), copied to data/coa-custom/racials.sql.
 
   python3 tools/coa_custom_racials.py <checkout of azerothcore-wotlk-coa> [label]
 """
@@ -51,7 +53,10 @@ def main():
 
     path = os.path.join(HERE, 'races.json')
     data = json.load(open(path, encoding='utf-8'))
-    data['coaCustom'] = {'source': label, 'racials': dict(sorted(table.items(), key=lambda kv: int(kv[0]))), 'scripted': scripted}
+    # src/coa_racials holds CoA Custom's code for them (taken over from the same branch): "ported" tells AFK Realm so.
+    ported = os.path.isfile(os.path.join(HERE, 'src', 'coa_racials', 'race_racials.cpp'))
+    data['coaCustom'] = {'source': label, 'racials': dict(sorted(table.items(), key=lambda kv: int(kv[0]))), 'scripted': scripted,
+                         'ported': ported, 'rows': 'data/coa-custom/racials.sql'}
     text = json.dumps(data, ensure_ascii=False, indent=1)
     open(path, 'w', encoding='utf-8', newline='\n').write(text + '\n')
     print('%d races, %d racials, %d of them need code of CoA Custom\'s server' % (len(table), len(wanted), len(scripted)))

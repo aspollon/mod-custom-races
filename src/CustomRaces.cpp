@@ -109,18 +109,6 @@ namespace
     constexpr uint32 SPLASH_SOUND = 1096;
     constexpr char const* PREFIX = "CustomRaces.";
 
-    // The ported racial abilities of the Highmountain Tauren of CoA Custom (mod-custom-server's race_racials.cpp): the
-    // spells its code needs by id, and its tuning. Which racials a race grants comes from the settings
-    // (CustomRaces.<race>.Racials); the rows of the spells come from the server data folder.
-    constexpr uint32 SPELL_BULL_RUSH_KNOCKDOWN = 110601;
-    constexpr uint32 SPELL_RUGGED_TENACITY     = 110603;
-    constexpr uint32 SPELL_WASTE_NOT_WANT_NOT  = 110605;
-    constexpr float BullRushDistance           = 12.0f;
-    constexpr float BullRushSpeed              = 12.0f;
-    constexpr float BullRushHitRadius          = 3.0f;
-    constexpr float RuggedTenacityPerStamina   = 0.05f;
-    constexpr uint32 WasteNotChance            = 10;
-
     /// The bit of a race in race masks; races above 32 have none (with the core patch, they use the bit of their base race).
     constexpr uint32 Bit(uint8 race) { return race >= 1 && race <= 32 ? 1u << (race - 1) : 0; }
 
@@ -181,30 +169,6 @@ namespace
                 spells.push_back(uint32(value));
         }
         return spells;
-    }
-
-    /// A racial a character has, as mod-custom-server's race_racials.cpp checks it: learned, so its aura is on.
-    bool KnowsRacial(Unit const* unit, uint32 spellId)
-    {
-        return unit && unit->IsPlayer() && unit->HasAura(spellId);
-    }
-
-    template <typename Check>
-    std::list<Unit*> Collect(WorldObject* center, Check& check, float radius)
-    {
-        std::list<Unit*> units;
-        Acore::UnitListSearcher<Check> searcher(center, units, check);
-        Cell::VisitObjects(center, searcher, radius);
-        return units;
-    }
-
-    /// The enemies around a point the caster may hit (the check of mod-custom-server's race_racials.cpp).
-    std::list<Unit*> HostilesAround(Unit* caster, WorldObject* center, float radius)
-    {
-        Acore::AnyUnfriendlyUnitInObjectRangeCheck check(center, caster, radius);
-        auto units = Collect(center, check, radius);
-        units.remove_if([caster](Unit* unit) { return !caster->IsValidAttackTarget(unit); });
-        return units;
     }
 
     /// The stock race CustomRaces.<race>.Base names, or the Human.
@@ -466,6 +430,7 @@ namespace
     {
         WorldDatabase.DirectExecute("DELETE FROM `spell_dbc` WHERE `ID` = {}", spell);
         WorldDatabase.DirectExecute("DELETE FROM `spell_script_names` WHERE `spell_id` = {}", spell);
+        WorldDatabase.DirectExecute("DELETE FROM `spell_proc` WHERE `SpellId` = {}", spell);
     }
 
     /// Runs the racial files of the races that are on and keeps their spells in `custom_races_racials`; the rows of
@@ -814,7 +779,7 @@ class CustomRacesPlayer : public PlayerScript
 {
 public:
     CustomRacesPlayer() : PlayerScript("CustomRacesPlayer", { PLAYERHOOK_ON_CREATE_INITIAL_ITEMS, PLAYERHOOK_ON_LOGIN,
-        PLAYERHOOK_ON_LOOT_ITEM, PLAYERHOOK_ON_TEXT_EMOTE }) { }
+        PLAYERHOOK_ON_TEXT_EMOTE }) { }
 
     bool OnPlayerCreateInitialItems(Player* player, bool& /*handled*/) override
     {
@@ -842,16 +807,6 @@ public:
         LearnRacials(player);
     }
 
-    /// Waste Not, Want Not (a racial of the Highmountain Tauren of CoA Custom, ported from its OnPlayerLootItem):
-    /// now and then a second portion of the meat or fish a character gathers.
-    void OnPlayerLootItem(Player* player, Item* item, uint32 /*count*/, ObjectGuid /*lootguid*/) override
-    {
-        ItemTemplate const* proto = item ? item->GetTemplate() : nullptr;
-        if (proto && proto->Class == ITEM_CLASS_TRADE_GOODS && proto->SubClass == ITEM_SUBCLASS_MEAT &&
-            KnowsRacial(player, SPELL_WASTE_NOT_WANT_NOT) && roll_chance_i(WasteNotChance))
-            player->AddItem(proto->ItemId, 1);
-    }
-
     /// The voice of a text emote (/silly, /joke and so on): the game client speaks the voice of a stock race itself,
     /// from its own voice table - but it plays nothing for a race of ours, whatever rows a patch brings it. So the
     /// voice the base race would speak is sent from here, from the rows the base race lent (LendVoices); everyone
@@ -867,70 +822,11 @@ public:
     }
 };
 
-/// The passives of the ported racials, at the hook each needs: Rugged Tenacity lowers every hit by a share of the
-/// character's stamina (OnDamage of race_racials_unit in mod-custom-server's race_racials.cpp).
-class CustomRacesUnit : public UnitScript
-{
-public:
-    CustomRacesUnit() : UnitScript("CustomRacesUnit", true, { UNITHOOK_ON_DAMAGE }) { }
-
-    void OnDamage(Unit* /*attacker*/, Unit* victim, uint32& damage) override
-    {
-        if (!damage || !victim || !victim->IsPlayer() || !KnowsRacial(victim, SPELL_RUGGED_TENACITY))
-            return;
-
-        damage -= std::min(damage, uint32(victim->GetStat(STAT_STAMINA) * RuggedTenacityPerStamina));
-    }
-};
-
-/// Bull Rush (the active racial of the Highmountain Tauren of CoA Custom, ported from its spell_race_bull_rush):
-/// charge forward and knock down every enemy on the way. Bound to its spell by the race's file (spell_script_names).
-class spell_race_bull_rush : public SpellScript
-{
-    PrepareSpellScript(spell_race_bull_rush);
-
-    SpellCastResult CheckCast()
-    {
-        return GetCaster()->HasUnitState(UNIT_STATE_ROOT) ? SPELL_FAILED_ROOTED : SPELL_CAST_OK;
-    }
-
-    void HandleDummy(SpellEffIndex /*effIndex*/)
-    {
-        Unit* caster = GetCaster();
-        float const startX = caster->GetPositionX();
-        float const startY = caster->GetPositionY();
-        Position const dest = caster->GetFirstCollisionPosition(BullRushDistance, 0.0f);
-        float const pathX = dest.GetPositionX() - startX;
-        float const pathY = dest.GetPositionY() - startY;
-        float const pathLengthSq = pathX * pathX + pathY * pathY;
-
-        // Everyone near the path of the charge is knocked down; a point beside it does not count.
-        if (pathLengthSq > 0.01f)
-        {
-            for (Unit* unit : HostilesAround(caster, caster, BullRushDistance + BullRushHitRadius))
-            {
-                float const toX = unit->GetPositionX() - startX;
-                float const toY = unit->GetPositionY() - startY;
-                float const along = std::clamp((toX * pathX + toY * pathY) / pathLengthSq, 0.0f, 1.0f);
-                if (unit->GetExactDist2d(startX + pathX * along, startY + pathY * along) <= BullRushHitRadius)
-                    caster->CastSpell(unit, SPELL_BULL_RUSH_KNOCKDOWN, true);
-            }
-        }
-
-        caster->GetMotionMaster()->MoveCharge(dest.GetPositionX(), dest.GetPositionY(), dest.GetPositionZ(), BullRushSpeed);
-    }
-
-    void Register() override
-    {
-        OnCheckCast += SpellCheckCastFn(spell_race_bull_rush::CheckCast);
-        OnEffectHitTarget += SpellEffectFn(spell_race_bull_rush::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
-    }
-};
+// The racial abilities of CoA Custom (Bull Rush and the passives of the Highmountain Tauren among them) are in
+// coa_racials/, taken over from CoA Custom as a whole.
 
 void AddSC_custom_races()
 {
-    RegisterSpellScript(spell_race_bull_rush);
     new CustomRacesWorld();
     new CustomRacesPlayer();
-    new CustomRacesUnit();
 }

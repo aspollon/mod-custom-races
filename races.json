@@ -573,6 +573,8 @@
    110944,
    111981,
    111984
-  ]
+  ],
+  "ported": true,
+  "rows": "data/coa-custom/racials.sql"
  }
 }
