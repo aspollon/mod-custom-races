@@ -406,32 +406,71 @@ namespace
         std::vector<std::string> Statements;
     };
 
+    /// Where a statement of a racial file stands after one more line: whether a text in quotes is still open. A text
+    /// may run over several lines (older files of AFK Realm wrote the line breaks of spell texts as they are), so
+    /// the lines are joined until the statement is complete.
+    bool QuoteOpenAfter(std::string const& text, bool open)
+    {
+        for (size_t i = 0; i < text.size(); ++i)
+        {
+            char const c = text[i];
+            if (open && c == '\\')
+                ++i;                                         // \' and \\ inside a text
+            else if (c == '\'')
+                open = !open;                                // '' inside a text closes and opens again: still open
+        }
+        return open;
+    }
+
+    /// The statements of a racial file. A statement the database could not read at all (a text without its closing
+    /// quote, no closing semicolon) is left out with an error in the log: the core stops the whole server on such an
+    /// error, and a broken file must not keep the realm from starting.
     bool ReadRacialFile(std::filesystem::path const& path, RacialFile& file)
     {
         std::ifstream in(path);
         if (!in)
             return false;
 
-        std::string line;
+        std::string line, statement;
+        bool open = false;                                   // a text in quotes runs on into the next line
+        uint32 skipped = 0;
         while (std::getline(in, line))
         {
             if (!line.empty() && line.back() == '\r')
                 line.pop_back();
-            size_t const first = line.find_first_not_of(" \t");
-            if (first == std::string::npos)
-                continue;
-            line.erase(0, first);
 
-            std::string const marker = "-- spells ";
-            if (line.compare(0, marker.size(), marker) == 0)
+            if (statement.empty())
             {
-                file.Spells = SpellIds(line.substr(marker.size()));
-                continue;
+                size_t const first = line.find_first_not_of(" \t");
+                if (first == std::string::npos)
+                    continue;
+                line.erase(0, first);
+
+                std::string const marker = "-- spells ";
+                if (line.compare(0, marker.size(), marker) == 0)
+                {
+                    file.Spells = SpellIds(line.substr(marker.size()));
+                    continue;
+                }
+                if (line.compare(0, 2, "--") == 0)
+                    continue;
+                statement = line;
             }
-            if (line.compare(0, 2, "--") == 0)
-                continue;
-            file.Statements.push_back(line);
+            else
+                statement += (open ? "\\n" : " ") + line;    // inside a text: the line break, written as SQL reads it
+
+            open = QuoteOpenAfter(line, open);
+            size_t const last = statement.find_last_not_of(" \t");
+            if (!open && last != std::string::npos && statement[last] == ';')
+            {
+                file.Statements.push_back(statement);
+                statement.clear();
+            }
         }
+        if (!statement.empty())
+            ++skipped;
+        if (skipped)
+            LOG_ERROR("module", "mod-custom-races: {} ends in the middle of a statement; that statement is left out (start AFK Realm's races page once to write the file again)", path.string());
         return !file.Statements.empty();
     }
 
