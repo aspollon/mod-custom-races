@@ -58,6 +58,8 @@ KNOWN = [
          portrait=('icon', 'achievement_alliedrace_kultiranhuman', 'achievement_alliedrace_kultiranhuman')),
     dict(key='Vulpera', base='Tauren', looks='armor',
          portrait=('icon', 'achievement_alliedrace_vulpera', 'achievement_alliedrace_vulpera')),
+    dict(key='VulperaEsteria', base='Draenei', looks='armor',
+         portrait=('icon', 'achievement_alliedrace_vulpera', 'achievement_alliedrace_vulpera')),
     dict(key='Pandaren', base='Human', looks='armor',
          portrait=('icon', 'achievement_character_pandaren_female', 'achievement_character_pandaren_female')),
     dict(key='HighElf', virtual=dict(source=10, name='High Elf'), base='Human', looks='armor',
@@ -84,7 +86,7 @@ KNOWN = [
 
 # Every race the module could have given a number to: those with one of their own in the CoA client below 32 that are
 # not stock races, and the free numbers. Removing the module takes back the rows of all of them.
-OWN = [9, 12, 13, 16, 19, 20]
+OWN = [9, 12, 13, 16, 19, 20, 74]
 
 
 def bit(race):
@@ -100,8 +102,16 @@ def write_races_json():
         if 'virtual' in r:
             entry['virtual'] = r['virtual']
         known[r['key']] = entry
-    data = {'slots': SLOTS, 'bases': [b[1] for b in BASES], 'known': known}
-    with open(os.path.join(ROOT, 'races.json'), 'w') as f:
+    # Keep what the setup page does not generate (the CoA Custom racial table and other hand-maintained data).
+    path = os.path.join(ROOT, 'races.json')
+    data = {}
+    if os.path.exists(path):
+        with open(path) as f:
+            data = json.load(f)
+    data['slots'] = SLOTS
+    data['bases'] = [b[1] for b in BASES]
+    data['known'] = known
+    with open(path, 'w') as f:
         json.dump(data, f, indent=1)
         f.write('\n')
 
@@ -154,10 +164,16 @@ def client_edits():
         each({'file': 'DBFilesClient\\CharacterCreationClassDetails.dbc',
               'cloneRows': {'match': {'8': bid}, 'set': {'8': race_id}, 'key': [4, 8, 12], 'replace': True}},
              cond('Base', **{'in': [bname]}))
+    # A race with a row of its own but no helmet models of its own (Import = 0): its ChrRaces row names the helmet
+    # prefix of another race (CustomRaces.<race>.HelmetPrefix), as CoA Custom does it.
+    each({'file': 'DBFilesClient\\ChrRaces.dbc',
+          'setRows': {'match': {'0': race_id}, 'set': {'6': setting('HelmetPrefix', True)}}},
+         cond('Import', notIn=['1'], default='0'), cond('HelmetPrefix', notIn=['']))
     # A race from another client (CustomRaces.<race>.Import = 1): its rows from the race folder, its files in an archive
     # of their own (AFK Realm, RaceImport).
     each({'file': 'DBFilesClient\\ChrRaces.dbc', 'importRace': {'folder': {'setting': 'CustomRaces.ImportFolder', 'conf': CONF, 'default': '', 'text': True},
-          'key': '{each}', 'id': race_id, 'base': setting('Base', True), 'name': setting('Name', True)}}, cond('Import', **{'is': '1'}))
+          'key': '{each}', 'id': race_id, 'base': setting('Base', True), 'name': setting('Name', True),
+          'helmetPrefix': setting('HelmetPrefix', True)}}, cond('Import', **{'is': '1'}))
     # Its icon, from the race folder (_Icons), when the setup page found one.
     each({'file': 'Interface\\Icons\\CoA_Race_{each}.blp', 'addFile': {'from': {'setting': 'CustomRaces.{each}.IconFile', 'conf': CONF, 'default': '', 'text': True}}},
          cond('IconFile', notIn=['']))
@@ -183,7 +199,9 @@ def client_edits():
 def client_fills():
     line = ('RACES[#RACES + 1] = { key = "{each}", name = "{conf:CustomRaces.{each}.Name}", file = "{conf:CustomRaces.{each}.File}", '
             'base = "{conf:CustomRaces.{each}.Base}", maleOnly = "{conf:CustomRaces.{each}.MaleOnly}" == "1", '
-            'icon = "{conf:CustomRaces.{each}.Icon}" } -- @RACES@')
+            'icon = "{conf:CustomRaces.{each}.Icon}", racials = "{conf:CustomRaces.{each}.Racials}", '
+            'id = "{conf:CustomRaces.{each}.Id}", height = { "{height:{conf:CustomRaces.{each}.Id}:0}", '
+            '"{height:{conf:CustomRaces.{each}.Id}:1}" } } -- @RACES@')
     return [{'marker': '@RACES@', 'forEach': EACH, 'line': line}]
 
 
@@ -200,6 +218,9 @@ def write_manifest():
             'rootFiles': [{'to': 'dinput8.dll',
                            'from': {'setting': 'CustomRaces.MoreRacesFile', 'conf': CONF, 'default': '', 'text': True},
                            'when': [{'conf': CONF, 'key': 'CustomRaces.MoreRaces', 'is': '1', 'default': '0'}]}],
+            # Files next to the game .exe that a race needs as a whole (the Esteria appearance files, for example).
+            'rootFolders': [{'from': {'setting': 'CustomRaces.ClientRootFolder', 'conf': CONF, 'default': '', 'text': True},
+                             'zip': True}],
         },
         'why': 'The race choice of the character creation shows the races chosen on the setup page (CustomRaces.Races), '
                'each with the faction of its base race: the game client already carries their models, skins and hair, '

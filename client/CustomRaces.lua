@@ -20,6 +20,7 @@ local KNOWN = {
 	Worgen = { portrait = { kind = "old", male = { 0.625, 0.75, 0.0, 0.25 }, female = { 0.625, 0.75, 0.5, 0.75 } } },
 	KulTiran = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_kultiranhuman", female = "Interface\\Icons\\achievement_alliedrace_kultiranhuman" } },
 	Vulpera = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_vulpera", female = "Interface\\Icons\\achievement_alliedrace_vulpera" } },
+	VulperaEsteria = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_alliedrace_vulpera", female = "Interface\\Icons\\achievement_alliedrace_vulpera" } },
 	Pandaren = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_character_pandaren_female", female = "Interface\\Icons\\achievement_character_pandaren_female" } },
 	HighElf = { portrait = { kind = "round", key = "BLOODELF" } },
 	FelOrc = { portrait = { kind = "icon", male = "Interface\\Icons\\achievement_boss_hellfire_felorccouncil", female = "Interface\\Icons\\achievement_boss_hellfire_felorccouncil" } },
@@ -859,8 +860,11 @@ end
 -- or one that changes another). For these races the buttons go to the DLL, and there are as many as the race has
 -- choices. Taken over from CoA Custom (scripts/esteria/esteria_options.lua, from Esteria's CharacterCreate.lua).
 do
-	-- CoA Custom's race number -> Esteria's, as the DLL's choices are told apart
+	-- CoA Custom's race number -> Esteria's, as the DLL's choices are told apart. The file name is the safer key:
+	-- an imported race keeps its CoA file (VulperaEsteria) but may get another number in this client.
 	local ESTERIA = { [66] = 46, [67] = 47, [68] = 48, [69] = 49, [70] = 51, [71] = 50, [72] = 53, [77] = 52, [74] = 20 }
+	local ESTERIA_FILE = { NAGA = 54, HIGHMOUNTAINTAUREN = 46, MECHAGNOME = 47, EARTHEN = 48, EARTHENHORDE = 49,
+		HARANIR = 50, HARANIRHORDE = 51, VULPERAESTERIA = 20, SETHRAKALLIANCE = 62, GNOLLHORDE = 63, SABERONHORDE = 64 }
 	local NAMED = { [20] = true, [46] = true, [48] = true, [49] = true, [50] = true, [51] = true }
 	local RANDOM = NAMED
 	local LABELS = { "Skin Color", "Face", "Hair Style", "Hair Color", "Eye Color", "Eyebrow Style",
@@ -872,7 +876,14 @@ do
 
 	local function EsteriaRace()
 		local race = listed[GetSelectedRace and GetSelectedRace() or 0]
-		return race and ESTERIA[tonumber(race.id) or 0]
+		if not race then
+			return nil
+		end
+		local byFile = ESTERIA_FILE[Plain(race.file)]
+		if byFile then
+			return byFile
+		end
+		return ESTERIA[tonumber(race.id) or 0]
 	end
 
 	local function Get(i)

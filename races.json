@@ -59,6 +59,12 @@
    "rating": "",
    "note": ""
   },
+  "VulperaEsteria": {
+   "base": "Draenei",
+   "looks": "armor",
+   "rating": "",
+   "note": ""
+  },
   "Pandaren": {
    "base": "Human",
    "looks": "armor",
