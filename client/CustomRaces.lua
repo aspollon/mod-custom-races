@@ -86,11 +86,67 @@ local function Copy(list, from, to)
 	end
 end
 
+-- A short text for the tooltip of races the client has none for (RACE_INFO_<race>), by the race's key or name without
+-- spaces; a race not listed here shows its name, as before.
+local DESCRIPTIONS = {
+	Worgen = "Gilneans cursed with the form of the wolf, who learned to keep their minds while the beast runs free.",
+	Goblin = "Cunning traders and tinkerers from Kezan. Everything has a price, and every price can be beaten.",
+	ZandalariTroll = "The proud trolls of Zandalar, eldest of their kind, guided by the loa of their ancient empire.",
+	KulTiran = "Broad-shouldered sailors of the island kingdom of Kul Tiras, at home on every sea.",
+	Vulpera = "Nimble desert foxes of Vol'dun who wander in caravans and always have something useful in the bag.",
+	Pandaren = "Wandering monks, brewers and philosophers from the mists of Pandaria, seeking balance in all things.",
+	HighElf = "Quel'dorei who never gave up the Light of the Sunwell, keepers of an old and proud tradition.",
+	FelOrc = "Orcs who drank demon blood, stronger and angrier than their brothers, marked by the fel forever.",
+	Broken = "Draenei twisted by the fel who still carry a spark of the Naaru's Light.",
+	Earthen = "Titan-forged guardians of living stone, woken again to protect the depths of the world.",
+	DrakkariTroll = "Ice trolls of the fallen Drakkari empire of Zul'Drak, who once drank the blood of their own gods.",
+	Vrykul = "Towering warriors of Northrend, forged by the titans and feared on every shore.",
+	Tuskarr = "Hardy fisher-folk of Northrend's coasts, patient, generous and unshakable.",
+	Taunka = "The northern kin of the Tauren, hardened by the long winters of the Borean Tundra.",
+	Naga = "Serpentine children of the deep, once highborne, now servants of the tides.",
+	ForestTroll = "Trolls of the Hinterlands and Eversong, ferocious hunters who heal from almost anything.",
+	IceTroll = "Trolls of the frozen north, hardened by ice and hunger.",
+	Skeleton = "The restless dead, risen once more and bound to a will of their own.",
+	Murloc = "Mrglglgl! Creatures of the shallows, slippery, loud and never alone for long.",
+	Arakkoa = "Bird-folk of the spires of Skettis and Draenor, keepers of ancient secrets and dark magic.",
+	HighmountainTauren = "Tauren of the mountains of Highmountain, mighty and patient as the great moose they ride.",
+	Mechagnome = "Gnomes of Mechagon who replaced flesh with metal, always improving, always tinkering.",
+	Haranir = "Root-folk of the Harandar, who draw life from the great roots beneath the world.",
+	Skyborne = "A people of the winds and high places, never quite at home on solid ground.",
+	DarkIronDwarf = "Dwarves of the Shadowforge, masters of fire and forge, tempered in the flames of Blackrock.",
+	MagharOrc = "Uncorrupted orcs of Draenor, who never drank the demon's blood and kept the old ways.",
+	LightforgedDraenei = "Draenei who fought the Legion for ages at the side of the Army of the Light.",
+	Nightborne = "The elves of Suramar, masters of the arcane, freed after ten thousand years under the dome.",
+	VoidElf = "Elves touched by the Void, who learned to master the shadow instead of fearing it.",
+	Dracthyr = "Dragon-kin of the Dragon Isles, created to be the perfect weapon and now free to choose their path.",
+	Eredar = "The ancient people of Argus, gifted and proud, whose brilliance made them a prize for the Legion.",
+	Harpy = "Winged hunters of the cliffs and storms, quick to strike and quicker to vanish.",
+	IllidariBloodElf = "Blood elves who followed Illidan, trading part of themselves for the power to hunt demons.",
+	IllidariNightElf = "Night elves who followed Illidan and chose the hunt over the safety of their kin.",
+	UndeadGnome = "Gnomes who did not let death stop their tinkering.",
+	Ogre = "Big, strong and not always clever, but no one ever argues with an ogre twice.",
+	Furbolg = "Bear-folk of the deep forests, gentle friends and terrible foes.",
+	Jinyu = "Fish-folk of Pandaria who read the will of the waters.",
+	Darkfallen = "San'layn of Northrend, elves of blood and shadow who serve no king anymore.",
+	Gnoll = "Hyena-folk of the wild lands, cunning in the pack and dangerous alone.",
+	Drakonid = "Mighty dragon-kin, bred for war in the shadow of the great flights.",
+	Drakkin = "Mortals with the blood of dragons in their veins, who carry the gifts of their flight.",
+	Grummle = "Small, cheerful traders of the mountains who never leave home without their pack and a lucky charm.",
+	Sethrak = "Snake-folk of Vol'dun, proud and wary, guardians of the secrets of the desert.",
+}
+
 -- Texts, racial abilities, scene, light, sound and camera of the base race.
 local function Lend(race, upper, file)
 	local base = race.baseFile:upper()
 	if not _G["RACE_INFO_" .. upper] or _G["RACE_INFO_" .. upper] == "" then
-		_G["RACE_INFO_" .. upper] = race.name
+		local wanted = Plain(race.key)
+		local text
+		for key, value in pairs(DESCRIPTIONS) do
+			if Plain(key) == wanted or Plain(key) == Plain(race.name) then
+				text = value
+			end
+		end
+		_G["RACE_INFO_" .. upper] = text or race.name
 	end
 	local prefix = "ABILITY_INFO_" .. base
 	local copies = {}
