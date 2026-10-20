@@ -353,9 +353,9 @@ Layout = function(count)
 	end
 	-- What a column of added races may hold: the first row that would stand over the class choice (or below the
 	-- foot of the screen) ends the column. Columns end before the middle of the screen.
-	local base = (#sides.Alliance.stock > 0 or #sides.Horde.stock > 0) and 1 or 0
-	local caps, last = {}, base - 1
-	for column = base, base + 15 do
+	local base = 0
+	local caps, last = {}, -1
+	for column = 0, 15 do
 		local x = 32 + column * PITCH
 		if x + size > W / 2 - 140 then                 -- the middle stays free for the character
 			break
@@ -363,7 +363,7 @@ Layout = function(count)
 		local rows = 0
 		for row = 0, fit - 1 do
 			local bottom = frameTop - (75 + row * step + size)
-			if bottom < frameBottom + 84 then
+			if bottom < frameBottom + 150 then             -- above Back and Help Me Choose
 				break
 			end
 			if bottom < zoneTop and x + size > zoneL - 12 and x < zoneR + 12 then
@@ -402,10 +402,14 @@ Layout = function(count)
 		button:Show()
 	end
 	for faction, side in pairs(sides) do
-		for k, i in ipairs(side.stock) do
-			place(_G["CharCreateRaceButton" .. i], faction, 0, k - 1)
+		-- the stock races first, then the added ones, column by column from the edge: none reaches the buttons below
+		local added, state = {}, SCROLL[faction]
+		for _, i in ipairs(side.stock) do
+			added[#added + 1] = i
 		end
-		local added, state = side.added, SCROLL[faction]
+		for _, i in ipairs(side.added) do
+			added[#added + 1] = i
+		end
 		local rows, total, offset = capacity, 0, 0
 		if #added > capacity and columns > 0 then
 			rows = caps[base]
