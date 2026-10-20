@@ -174,6 +174,36 @@ local function Portrait(self, race, gender)
 	end
 end
 
+-- The tooltip of a race shows the racial abilities of its base race (lent above) and, below them, its own: the spells
+-- AFK Realm gives it (CustomRaces.<race>.Racials), with icon, name and text from the client's spell table - the same
+-- way the game shows those of the stock races. A spell the client does not know is left out.
+local function OwnRacials(self, race)
+	if not race or not race.racials or race.racials == "" or type(self.tooltipText) ~= "table" or not GetSpellData then
+		return
+	end
+	local lines = {}
+	for id in race.racials:gmatch("%d+") do
+		local ok, name, text, icon = pcall(GetSpellData, tonumber(id), false, true)
+		if ok and name and name ~= "" then
+			text = type(text) == "string" and text:gsub("[\r\n]+", " ") or ""
+			if text:find("%$") then
+				text = ""                                 -- a text with the client's $ variables left unresolved
+			end
+			local line = (icon and icon ~= "" and ("|T" .. icon .. ":24:24:0:0|t") or "") .. "|cffffffff" .. name .. "|r"
+			if text ~= "" then
+				line = line .. " - " .. text
+			end
+			lines[#lines + 1] = line .. "\n"
+		end
+	end
+	if #lines > 0 then
+		tinsert(self.tooltipText, "|cffffd100" .. (CUSTOM_RACES_OWN_RACIALS or "Racial abilities of its own:") .. "|r\n")
+		for _, line in ipairs(lines) do
+			tinsert(self.tooltipText, line)
+		end
+	end
+end
+
 local setRace = CharCreateRaceButtonMixin.SetRace
 local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 	local race = Find(raceName, raceEnglishName)
@@ -191,6 +221,7 @@ local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 	end
 	local result = setRace(self, raceName, raceEnglishName, gender, enabled)
 	Portrait(self, race, gender)
+	OwnRacials(self, race)
 	return result
 end
 CharCreateRaceButtonMixin.SetRace = SetRace
