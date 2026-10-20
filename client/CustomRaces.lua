@@ -322,6 +322,10 @@ local function CreateBar(faction)
 	return { track = track, thumb = thumb }
 end
 
+-- The race buttons stand as a grid of portraits: smaller than the game's (SCALE), without their names and the coloured
+-- band behind them - the name is in the tooltip - so that many races fit next to each other.
+local SCALE, PITCH, GAP = 0.8, 60, 12
+
 -- Alliance on the left, Horde on the right. The stock races keep one column at the edge; the added races fill
 -- columns of their own towards the middle, from the top. A column whose buttons would stand over the class choice
 -- of the lower middle keeps only the rows above it; where its name is, the class choice is left alone, too. When a
@@ -335,8 +339,8 @@ Layout = function(count)
 	local zoneL, zoneR, zoneTop = ClassZone()
 	zoneTop = zoneTop + 12
 	ZONE = { l = zoneL, r = zoneR, top = zoneTop }
-	local size = CharCreateRaceButton1 and CharCreateRaceButton1:GetHeight() or 52
-	local step = size + 12
+	local size = (CharCreateRaceButton1 and CharCreateRaceButton1:GetHeight() or 52) * SCALE
+	local step = size + GAP
 	local room = math.max(300, H - 120)
 	local fit = math.max(1, math.floor((room + 12) / step))
 	local sides = { Alliance = { stock = {}, added = {} }, Horde = { stock = {}, added = {} } }
@@ -351,9 +355,9 @@ Layout = function(count)
 	-- foot of the screen) ends the column. Columns end before the middle of the screen.
 	local base = (#sides.Alliance.stock > 0 or #sides.Horde.stock > 0) and 1 or 0
 	local caps, last = {}, base - 1
-	for column = base, base + 7 do
-		local x = 32 + column * 170
-		if x + size > W / 2 - 20 then
+	for column = base, base + 15 do
+		local x = 32 + column * PITCH
+		if x + size > W / 2 - 140 then                 -- the middle stays free for the character
 			break
 		end
 		local rows = 0
@@ -362,7 +366,7 @@ Layout = function(count)
 			if bottom < frameBottom + 84 then
 				break
 			end
-			if bottom < zoneTop and x + size + 150 > zoneL - 12 and x < zoneR + 12 then
+			if bottom < zoneTop and x + size > zoneL - 12 and x < zoneR + 12 then
 				break
 			end
 			rows = rows + 1
@@ -378,21 +382,28 @@ Layout = function(count)
 		capacity = capacity + (caps[column] or 0)
 	end
 	local columns = last - base + 1
-	local function place(button, faction, column, row, gap)
+	-- the offsets of a scaled button count in its own scale: the place on the frame divided by it
+	local function place(button, faction, column, row)
+		button:SetScale(SCALE)
 		button:ClearAllPoints()
 		if faction == "Alliance" then
-			button:SetPoint("TOPLEFT", frame, "TOPLEFT", 32 + column * 170, -75 - row * (size + gap))
+			button:SetPoint("TOPLEFT", frame, "TOPLEFT", (32 + column * PITCH) / SCALE, (-75 - row * step) / SCALE)
 		else
-			button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -32 - column * 170, -75 - row * (size + gap))
+			button:SetPoint("TOPRIGHT", frame, "TOPRIGHT", (-32 - column * PITCH) / SCALE, (-75 - row * step) / SCALE)
 		end
 		button:SetFaction(faction)
+		local text = button.Text or _G[button:GetName() .. "Text"]
+		if text then
+			text:Hide()
+		end
+		if button.Shadow then
+			button.Shadow:Hide()
+		end
 		button:Show()
 	end
 	for faction, side in pairs(sides) do
-		local n = #side.stock
-		local gap = n > 1 and math.min(30, math.floor((room - n * size) / (n - 1))) or 30
 		for k, i in ipairs(side.stock) do
-			place(_G["CharCreateRaceButton" .. i], faction, 0, k - 1, gap)
+			place(_G["CharCreateRaceButton" .. i], faction, 0, k - 1)
 		end
 		local added, state = side.added, SCROLL[faction]
 		local rows, total, offset = capacity, 0, 0
@@ -426,7 +437,7 @@ Layout = function(count)
 				end
 			end
 			if column then
-				place(button, faction, column, row, 12)
+				place(button, faction, column, row)
 			else
 				button:Hide()
 			end
@@ -439,9 +450,9 @@ Layout = function(count)
 			local thumb = math.max(24, height * rows / total)
 			bar.track:ClearAllPoints()
 			if faction == "Alliance" then
-				bar.track:SetPoint("TOPLEFT", frame, "TOPLEFT", 89 + last * 170, -75)
+				bar.track:SetPoint("TOPLEFT", frame, "TOPLEFT", 32 + last * PITCH + size + 6, -75)
 			else
-				bar.track:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(89 + last * 170), -75)
+				bar.track:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(32 + last * PITCH + size + 6), -75)
 			end
 			bar.track:SetHeight(height)
 			bar.thumb:ClearAllPoints()
