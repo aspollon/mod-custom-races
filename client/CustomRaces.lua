@@ -665,7 +665,12 @@ local function SizeOf(race, sex)
 	if not own or not base or own <= 0 or base <= 0 then
 		return 1, 0
 	end
-	return math.max(0.5, math.min(3, own / base)), own - base
+	-- only a race taller than its base race moves the camera: for a smaller one the camera of the base race stays (it
+	-- went down by the yards the race is smaller and ended in the ground, a Vulpera leaning on the Tauren for example)
+	if own <= base then
+		return 1, 0
+	end
+	return math.min(3, own / base), own - base
 end
 
 -- How the camera follows the size (set by eye on the Highmountain Tauren, men and women): per scene, back by a share of
@@ -902,6 +907,21 @@ do
 		end
 	end
 
+	-- the game's own names on the five buttons, as its character creation sets them (CHAR_CUSTOMIZATION<n>_DESC, then
+	-- the hair and beard names of the race)
+	local function StockLabels()
+		for i = 1, 5 do
+			local text = Label(_G[NAME .. i])
+			local desc = _G["CHAR_CUSTOMIZATION" .. i .. "_DESC"]
+			if text and desc then
+				text:SetText(desc)
+			end
+		end
+		if CharCreateCustomizationFrame_OnShow then pcall(CharCreateCustomizationFrame_OnShow) end
+		if CharacterCreate_UpdateHairCustomization then pcall(CharacterCreate_UpdateHairCustomization) end
+		if CharacterCreate_UpdateFacialHairCustomization then pcall(CharacterCreate_UpdateFacialHairCustomization) end
+	end
+
 	local function Refresh()
 		local first = _G[NAME .. "1"]
 		if not first then
@@ -988,13 +1008,18 @@ do
 					frame:SetPoint(unpack(saved[i]))
 				end
 			end
-			if CharCreateCustomizationFrame_OnShow then
-				pcall(CharCreateCustomizationFrame_OnShow)
-			else
-				if CHAR_CUSTOMIZATION1_DESC and Label(_G[NAME .. "1"]) then Label(_G[NAME .. "1"]):SetText(CHAR_CUSTOMIZATION1_DESC) end
-				if CHAR_CUSTOMIZATION2_DESC and Label(_G[NAME .. "2"]) then Label(_G[NAME .. "2"]):SetText(CHAR_CUSTOMIZATION2_DESC) end
+			StockLabels()
+		else
+			-- a label still showing the DLL's count ("Face  4/4") belongs to a race of the DLL seen before: the game's
+			-- own buttons show the names only, so they are put back
+			for i = 1, 5 do
+				local text = Label(_G[NAME .. i])
+				local shown = text and text:GetText()
+				if shown and (shown:find("  %d+/%d+$") or shown:find("  None$") or shown:find("  Gem$")) then
+					StockLabels()
+					break
+				end
 			end
-			if CharacterCreate_UpdateHairCustomization then pcall(CharacterCreate_UpdateHairCustomization) end
 		end
 	end
 
