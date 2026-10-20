@@ -138,11 +138,13 @@ local DESCRIPTIONS = {
 -- Texts, racial abilities, scene, light, sound and camera of the base race.
 local function Lend(race, upper, file)
 	local base = race.baseFile:upper()
-	if not _G["RACE_INFO_" .. upper] or _G["RACE_INFO_" .. upper] == "" then
+	-- a text the client has stays; one that only repeats the race's name is no description
+	local have = _G["RACE_INFO_" .. upper]
+	if type(have) ~= "string" or Plain(have) == "" or Plain(have) == Plain(race.name) or Plain(have) == Plain(upper) or Plain(have) == Plain(race.key) then
 		local wanted = Plain(race.key)
 		local text
 		for key, value in pairs(DESCRIPTIONS) do
-			if Plain(key) == wanted or Plain(key) == Plain(race.name) then
+			if Plain(key) == wanted or Plain(key) == Plain(race.name) or Plain(key) == Plain(upper) then
 				text = value
 			end
 		end
