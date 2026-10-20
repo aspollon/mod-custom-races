@@ -123,6 +123,9 @@ CustomRaces.RacialsFolder = ""
 #    CustomRaces.<race>.MaleOnly      1: the client has no female body for it; its characters are men.
 #    CustomRaces.<race>.OwnHelmets    1: the client has helmet models for it. 0: it would show a placeholder for
 #                                     every helmet, so its characters (players and bots) keep helmets hidden.
+#    CustomRaces.<race>.HelmetPrefix  For a race without helmet models of its own: the prefix of its base race
+#                                     (Ta, Gn, Hu ...), which the client patch gives it, so it wears that race's
+#                                     helmets, as CoA Custom does it. Empty: its own prefix. Set by AFK Realm.
 #    CustomRaces.<race>.Import        1: the race comes from the race folder (its rows and files), 0: from the client.
 #    CustomRaces.<race>.Appearance    The looks it keeps beyond the five bytes of the game, for EsteriaAppearance.dll of
 #                                     CoA Custom: 0 none, 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit
