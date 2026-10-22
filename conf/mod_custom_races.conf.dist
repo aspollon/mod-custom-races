@@ -36,6 +36,18 @@
 CustomRaces.Enable = 1
 
 #
+#    CoACustomRaces.BotsEnable
+#        Description: mod-playerbots may create random bots in the custom races. Read by mod-playerbots, not by this
+#                     module. Off: bots keep the stock races. On: every race in CustomRaces.Races that is not in
+#                     AiPlayerbot.ExcludedBotRaces or AiPlayerbot.CrashingBotRaces can be chosen. Needs a restart;
+#                     bots already created keep their race (delete the bot accounts to renew them).
+#        Default:     0 - Off
+#                     1 - On
+#
+
+CoACustomRaces.BotsEnable = 0
+
+#
 #    CustomRaces.Races
 #        Description: The races that are playable, by their key (the English name without spaces), separated by
 #                     spaces, for example "Goblin Worgen Vrykul". Each needs its options below.
