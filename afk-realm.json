@@ -3223,6 +3223,25 @@
        "default": "0"
       }
      ]
+    },
+    {
+     "to": "Ascension-b.exe",
+     "from": {
+      "setting": "CustomRaces.ClientExe",
+      "conf": "mod_custom_races.conf",
+      "default": "",
+      "text": true
+     },
+     "when": [
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.ClientExe",
+       "default": "",
+       "notIn": [
+        ""
+       ]
+      }
+     ]
     }
    ],
    "rootFolders": [
