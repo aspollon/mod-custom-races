@@ -3225,7 +3225,8 @@
      ]
     },
     {
-     "to": "Ascension-b.exe",
+     "to": "",
+     "gameExe": true,
      "from": {
       "setting": "CustomRaces.ClientExe",
       "conf": "mod_custom_races.conf",

@@ -107,9 +107,9 @@ CustomRaces.ClientRootFolder = ""
 #
 #    CustomRaces.ClientExe
 #        Description: The patched game exe to put next to the game, when it is not in
-#                     CustomRaces.ClientRootFolder (for example Ascension-b.exe from a folder that has
-#                     only the Esteria files). AFK Realm copies it as Ascension-b.exe. Empty: use the exe
-#                     that is in CustomRaces.ClientRootFolder, if any. Not read by the server.
+#                     CustomRaces.ClientRootFolder (for example Ascension.exe or Ascension-b.exe from a
+#                     folder that has only the Esteria files). AFK Realm copies it under its own name.
+#                     Empty: use the exe that is in CustomRaces.ClientRootFolder, if any. Not read by the server.
 #        Default:     ""
 
 CustomRaces.ClientExe = ""
