@@ -164,9 +164,6 @@ CustomRaces.RacialsFolder = ""
 #                                     spell_script_names) the module takes over at every start from the .sql AFK
 #                                     Realm writes for the race into CustomRaces.RacialsFolder, and gives back when
 #                                     the race goes off again.
-#    CustomRaces.ServerDataFolder     Optional: the server data folder of a server pack that keeps the racial rows of
-#                                     its races in a folder of its own (Modules > Custom races > Server data). Empty
-#                                     for CoA Custom: its races bring their racials without it.
 #
 #    Example (the Goblin of the CoA client):
 #
