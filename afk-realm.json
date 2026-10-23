@@ -3243,19 +3243,6 @@
        ]
       }
      ]
-    },
-    {
-     "to": "Data\\patch-ZZZZ.MPQ",
-     "from": "client/GnollRepair/patch-ZZZZ.MPQ",
-     "zip": true,
-     "when": [
-      {
-       "conf": "mod_custom_races.conf",
-       "key": "CustomRaces.HighRaces",
-       "is": "1",
-       "default": "0"
-      }
-     ]
     }
    ],
    "rootFolders": [
