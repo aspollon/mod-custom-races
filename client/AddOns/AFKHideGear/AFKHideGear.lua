@@ -36,10 +36,23 @@ local function CreateButton()
 
     button = CreateFrame("Button", "AFKHideGearButton", parent, "UIPanelButtonTemplate")
     button:SetSize(132, 22)
-    button:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, -4)
+    -- The spot marked with the frame stack: left of the model, above the tab row.
+    if AFKHideGearDB and AFKHideGearDB.point then
+        button:SetPoint(unpack(AFKHideGearDB.point))
+    else
+        button:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 110, 110)
+    end
     button:SetFrameStrata("DIALOG")
     button:SetFrameLevel((parent:GetFrameLevel() or 1) + 30)
     button:SetClampedToScreen(true)
+    button:SetMovable(true)
+    button:RegisterForDrag("LeftButton")
+    button:SetScript("OnDragStart", button.StartMoving)
+    button:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        AFKHideGearDB = AFKHideGearDB or {}
+        AFKHideGearDB.point = { self:GetPoint(1) }
+    end)
     button:SetText(Label(false))
     button:SetScript("OnClick", Toggle)
     button:SetScript("OnEnter", function(self)

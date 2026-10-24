@@ -3,4 +3,5 @@
 ## Notes: Hides your armor for everyone; weapons stay visible. Saved per character.
 ## Author: AFK Realm
 ## Version: 1.0
+## SavedVariables: AFKHideGearDB
 AFKHideGear.lua
