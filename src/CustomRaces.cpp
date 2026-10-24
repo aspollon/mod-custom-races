@@ -842,6 +842,73 @@ namespace
         player->InitDisplayIds();
     }
 
+    /// Chooses the valid section value closest to what the character still carries. A race change keeps the five
+    /// appearance bytes of the old race; if they do not exist in the new race's sections, the client draws a model
+    /// without face or hair. The barber only rebuilds that look for the session, so the next login shows the holes
+    /// again. Repair the bytes once and write them back, so character selection and the world agree again.
+    bool RepairAppearance(Player* player)
+    {
+        RaceDef const* race = player ? ActiveRace(player) : nullptr;
+        if (!race)
+            return false;
+
+        std::set<uint8> skins, faces, hairStyles, hairColors, facialHair;
+        for (CharSectionsEntry const* section : sCharSectionsStore)
+        {
+            if (section->Race != race->Id || section->Gender != player->getGender())
+                continue;
+            switch (section->GenType)
+            {
+                case SECTION_TYPE_SKIN: skins.insert(uint8(section->Color)); break;
+                case SECTION_TYPE_FACE: faces.insert(uint8(section->Type)); break;
+                case SECTION_TYPE_HAIR:
+                    hairStyles.insert(uint8(section->Type));
+                    hairColors.insert(uint8(section->Color));
+                    break;
+                case SECTION_TYPE_FACIAL_HAIR: facialHair.insert(uint8(section->Type)); break;
+                default: break;
+            }
+        }
+        if (skins.empty())
+            return false;
+
+        auto closest = [](std::set<uint8> const& values, uint8 wanted)
+        {
+            uint8 best = *values.begin();
+            unsigned bestDistance = 255;
+            for (uint8 value : values)
+            {
+                unsigned distance = value > wanted ? value - wanted : wanted - value;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = value;
+                }
+            }
+            return best;
+        };
+
+        uint8 skin = player->GetByteValue(PLAYER_BYTES, 0);
+        uint8 face = player->GetByteValue(PLAYER_BYTES, 1);
+        if (skins.count(skin) && (faces.empty() || faces.count(face)))
+            return false;
+
+        uint8 hairStyle = hairStyles.empty() ? 0 : *hairStyles.begin();
+        uint8 hairColor = hairColors.empty() ? 0 : *hairColors.begin();
+        uint8 facial = facialHair.empty() ? 0 : *facialHair.begin();
+        skin = closest(skins, skin);
+        if (!faces.empty())
+            face = closest(faces, face);
+
+        player->SetByteValue(PLAYER_BYTES, 0, skin);
+        player->SetByteValue(PLAYER_BYTES, 1, face);
+        player->SetByteValue(PLAYER_BYTES, 2, hairStyle);
+        player->SetByteValue(PLAYER_BYTES, 3, hairColor);
+        player->SetByteValue(PLAYER_BYTES_2, 0, facial);
+        player->InitDisplayIds();
+        return true;
+    }
+
     /// The racials a character knows: the ones of the race it plays, learned at every login; the ones of every other
     /// race of this realm taken away - so a race switched off takes its racials from its characters at the first
     /// login. Spells the server does not know (rows not taken over) are left out.
@@ -886,6 +953,22 @@ public:
             return;
 
         HideHelmet(player);
+        uint8 oldGender = player->getGender();
+        MakeMale(player);
+        bool changed = oldGender != player->getGender();
+        changed |= RepairAppearance(player);
+
+        // The character list is built from the database, so a repaired look has to be there before the next login.
+        if (changed)
+        {
+            CharacterDatabase.Execute("UPDATE characters SET gender = {}, skin = {}, face = {}, hairStyle = {}, "
+                "hairColor = {}, facialStyle = {} WHERE guid = {}",
+                player->GetByteValue(PLAYER_BYTES_3, 0), player->GetByteValue(PLAYER_BYTES, 0),
+                player->GetByteValue(PLAYER_BYTES, 1), player->GetByteValue(PLAYER_BYTES, 2),
+                player->GetByteValue(PLAYER_BYTES, 3), player->GetByteValue(PLAYER_BYTES_2, 0),
+                player->GetGUID().GetCounter());
+        }
+
         LearnRacials(player);
     }
 
