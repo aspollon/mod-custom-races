@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: AFK Hide Gear
+## Notes: Hides your armor for everyone; weapons stay visible. Saved per character.
+## Author: AFK Realm
+## Version: 1.0
+AFKHideGear.lua

@@ -9,6 +9,9 @@
   }
  ],
  "client": {
+  "addons": [
+   "client/AddOns/AFKHideGear"
+  ],
   "clearCache": true,
   "patch": {
    "files": [
