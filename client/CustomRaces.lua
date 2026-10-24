@@ -862,13 +862,15 @@ end
 do
 	-- CoA Custom's race number -> Esteria's, as the DLL's choices are told apart. The file name is the safer key:
 	-- an imported race keeps its CoA file (VulperaEsteria) but may get another number in this client.
-	local ESTERIA = { [66] = 46, [67] = 47, [68] = 48, [69] = 49, [70] = 51, [71] = 50, [72] = 53, [77] = 52, [74] = 20 }
+	local ESTERIA = { [65] = 54, [66] = 46, [67] = 47, [68] = 48, [69] = 49, [70] = 51, [71] = 50, [72] = 53, [77] = 52, [74] = 20,
+		[82] = 62, [83] = 63, [97] = 64 }
 	local ESTERIA_FILE = { NAGA = 54, HIGHMOUNTAINTAUREN = 46, MECHAGNOME = 47, EARTHEN = 48, EARTHENHORDE = 49,
 		HARANIR = 50, HARANIRHORDE = 51, VULPERAESTERIA = 20, SETHRAKALLIANCE = 62, GNOLLHORDE = 63, SABERONHORDE = 64 }
 	local NAMED = { [20] = true, [46] = true, [48] = true, [49] = true, [50] = true, [51] = true }
 	local RANDOM = NAMED
 	local LABELS = { "Skin Color", "Face", "Hair Style", "Hair Color", "Eye Color", "Eyebrow Style",
 		"Feathers", "Feather Color", "Facial Hair", "Ears" }
+	local GNOLL_LABELS = { "Skin Color", "Face", "Mane", "Mane Color", "Eyes", "Outfit Color", "Armor Style", "Armor Color", "Outfit Style", "Cloth Color" }
 	local MECH_LABELS = { "Skin Color", "Face", "Hair Style", "Hair Color", "Facial Hair", "Arm Upgrade", "Leg Upgrade",
 		"Modification", "Eye Color", "Paint", "Eyesight", "Eye Style" }
 	local MAX = 29
@@ -979,7 +981,7 @@ do
 					local column = math.floor(row / ROWS)
 					frame:ClearAllPoints()
 					frame:SetPoint("TOPLEFT", parent, "TOPLEFT", (saved.x or 0) - column * COLUMN, (saved.y or 0) - (row % ROWS) * STEP)
-					local name = NAMED[race] and (label or "") or race == 47 and MECH_LABELS[i] or LABELS[i] or ""
+					local name = (label and label ~= "" and label) or (race == 63 and GNOLL_LABELS[i]) or (NAMED[race] and "") or (race == 47 and MECH_LABELS[i]) or LABELS[i] or ""
 					local text = Label(frame)
 					if text then
 						if (race == 48 or race == 49) and label == "Belt" then
