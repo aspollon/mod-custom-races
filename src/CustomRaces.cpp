@@ -802,6 +802,46 @@ namespace
             player->SetPlayerFlag(PLAYER_FLAGS_HIDE_HELM);
     }
 
+    /// A race without a female model is male: an old female character of it (made before the flag, or a bot
+    /// created by an older playerbots version) becomes a man again at login.
+    void MakeMale(Player* player)
+    {
+        RaceDef const* race = player ? ActiveRace(player) : nullptr;
+        if (!race || !race->MaleOnly)
+            return;
+
+        if (player->getGender() == GENDER_FEMALE)
+        {
+            player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_MALE);
+            player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_MALE);   // race, class, gender, power
+            player->SetUInt32Value(PLAYER_BYTES, 0);             // skin, face, hair style and colour of a man
+            player->SetByteValue(PLAYER_BYTES_2, 0, 0);          // no beard
+        }
+
+        // Bots made before the race had sections have every appearance byte 0. They are drawn as untextured
+        // white models; take the first valid male section of the race instead.
+        if (player->GetByteValue(PLAYER_BYTES, 0) == 0 && player->GetByteValue(PLAYER_BYTES, 1) == 0 &&
+            player->GetByteValue(PLAYER_BYTES, 2) == 0 && player->GetByteValue(PLAYER_BYTES, 3) == 0 &&
+            player->GetByteValue(PLAYER_BYTES_2, 0) == 0)
+        {
+            for (CharSectionsEntry const* section : sCharSectionsStore)
+            {
+                if (section->Race != race->Id || section->Gender != GENDER_MALE)
+                    continue;
+                switch (section->GenType)
+                {
+                    case SECTION_TYPE_SKIN: player->SetByteValue(PLAYER_BYTES, 0, section->Color); break;
+                    case SECTION_TYPE_FACE: player->SetByteValue(PLAYER_BYTES, 1, section->Type); break;
+                    case SECTION_TYPE_HAIR: player->SetByteValue(PLAYER_BYTES, 2, section->Type); player->SetByteValue(PLAYER_BYTES, 3, section->Color); break;
+                    case SECTION_TYPE_FACIAL_HAIR: player->SetByteValue(PLAYER_BYTES_2, 0, section->Type); break;
+                    default: break;
+                }
+            }
+        }
+
+        player->InitDisplayIds();
+    }
+
     /// The racials a character knows: the ones of the race it plays, learned at every login; the ones of every other
     /// race of this realm taken away - so a race switched off takes its racials from its characters at the first
     /// login. Spells the server does not know (rows not taken over) are left out.
@@ -836,15 +876,7 @@ public:
         if (!player)
             return true;
         HideHelmet(player);
-        RaceDef const* race = ActiveRace(player);
-        if (race && race->MaleOnly && player->getGender() == GENDER_FEMALE)
-        {
-            player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_MALE);
-            player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_MALE);   // race, class, gender, power
-            player->SetUInt32Value(PLAYER_BYTES, 0);             // skin, face, hair style and colour of a man
-            player->SetByteValue(PLAYER_BYTES_2, 0, 0);          // no beard
-            player->InitDisplayIds();
-        }
+        MakeMale(player);
         return true;
     }
 

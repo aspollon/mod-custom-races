@@ -21,14 +21,25 @@ local function Toggle()
     SendChatMessage(".hidearmor", "SAY")
 end
 
+local hooked
+
 local function CreateButton()
-    if button or not PaperDollFrame then
+    if button then
         return
     end
 
-    button = CreateFrame("Button", "AFKHideGearButton", PaperDollFrame, "UIPanelButtonTemplate")
+    -- Ascension uses its own character frame; older clients use PaperDollFrame.
+    local parent = _G["AscensionCharacterFrame"] or _G["CharacterFrame"] or _G["PaperDollFrame"]
+    if not parent then
+        return
+    end
+
+    button = CreateFrame("Button", "AFKHideGearButton", parent, "UIPanelButtonTemplate")
     button:SetSize(132, 22)
-    button:SetPoint("BOTTOMLEFT", PaperDollFrame, "BOTTOMLEFT", 8, 8)
+    button:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 8, -4)
+    button:SetFrameStrata("DIALOG")
+    button:SetFrameLevel((parent:GetFrameLevel() or 1) + 30)
+    button:SetClampedToScreen(true)
     button:SetText(Label(false))
     button:SetScript("OnClick", Toggle)
     button:SetScript("OnEnter", function(self)
@@ -38,13 +49,23 @@ local function CreateButton()
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    button:Show()
+
+    if not hooked and parent.HookScript then
+        hooked = true
+        parent:HookScript("OnShow", CreateButton)
+    end
 end
 
 local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
 frame:SetScript("OnEvent", function(_, event, message)
-    if event == "PLAYER_LOGIN" then
+    if event == "ADDON_LOADED" then
+        CreateButton()
+    elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
         CreateButton()
         SendChatMessage(".hidearmor status", "SAY")
     elseif event == "CHAT_MSG_SYSTEM" then
