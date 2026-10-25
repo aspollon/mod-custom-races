@@ -20,6 +20,12 @@ damit auch ein Kaltstart dieselben Esteria-Sections wie die Vorschau benutzt. Di
 unangetastet: Sie laufen auch für NPCs und Bots; ein falscher Charakterzeiger dort ließ den Client beim
 Weltbetreten abstürzen.
 
+AFK Realm 1.0.50 und neuer erledigen das automatisch für einen erkannten CoA-Custom-1.9-Client-Root. Die
+fingerprintgeprüften Thunks landen auf temporären Kopien von `Ascension.exe` und `EsteriaAppearance.dll`; die
+Dateien im Pack selbst bleiben unverändert. Sowohl der installierte Client als auch die exportierte ZIP benutzen
+die gepatchten Kopien. Eine unbekannte oder bereits gepatchte Datei bleibt unangetastet. Die Werkzeuge bleiben zum
+Prüfen, für einen anderen Client-Build oder zum manuellen Vorbereiten eines Packs.
+
 Gegen den Start-Crash darf die `dxvk.conf` im Client-Root **kein**
 `dxvk.enableGraphicsPipelineLibrary`/`dxvk.trackPipelineLifetime` setzen; damit stürzte der Esteria-Texturlader
 beim Kaltstart ab. Die mitgelieferte `d3d9.dll` (DXVK 2.7.1) gehört daneben. Die DBCs bleiben unverändert.
@@ -29,6 +35,11 @@ die ersten Texturen fertig sind. Das ist der verbleibende Timing-Crash vor dem L
 verdeckt ihn nur. `tools/esteria_start_delay.py` ergänzt eine Zwei-Sekunden-Wartezeit am Worker-Start
 (DLL-RVA `0x41EF8`) als versionsgeprüfte Übergangslösung. Sauber wäre, den Worker erst nach dem Ready-Signal des
 Renderers zu starten; das Werkzeug ist nur für die aktuelle 414.720-Byte-DLL und verweigert andere Builds.
+
+AFK Realm 1.0.50 und neuer ergänzen diese Wartezeit automatisch auf einer temporären Kopie derselben DLL. Der
+Client-Root liefert weiterhin `dxvk.conf`, die DXVK-2.7.1-`d3d9.dll` und die Equipment-Fitting-Dateien. Ersetzt CoA
+Custom die DLL durch einen Build mit anderem Fingerprint, lässt AFK Realm sie absichtlich unverändert; dann sind
+das Werkzeug oder ein Fix im CoA-Client nötig.
 
 ## Installation
 

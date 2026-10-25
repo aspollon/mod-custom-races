@@ -111,6 +111,12 @@ and their side from the core's race table.
   packet can carry the sixth appearance value described above. Keep the previous `Ascension.exe` beside it; the
   tool refuses an unknown client instead of guessing.
 
+  AFK Realm 1.0.50 and newer do this automatically for a recognised CoA Custom 1.9 client root. It applies the
+  fingerprint-checked thunks to temporary copies of `Ascension.exe` and `EsteriaAppearance.dll`; the files in the
+  pack are not changed. Both the installed client and the exported ZIP use the patched copies. An unknown or
+  already patched file is left untouched. The tools remain for checking, for another client build, or for
+  preparing a pack by hand.
+
 ## Settings (`mod_custom_races.conf`)
 
 | Option | Default | |
@@ -143,6 +149,11 @@ texture objects are ready. That is the remaining timing crash: it happens before
 hides it. `tools/esteria_start_delay.py` adds a two-second wait to the worker start (DLL RVA `0x41EF8`) as a
 version-checked workaround. The proper source fix is to queue the worker until the renderer signals that the D3D9
 device is ready; the tool is only for the current 414,720-byte DLL and refuses another build.
+
+AFK Realm 1.0.50 and newer apply this delay automatically to a temporary copy of the same DLL; the client root
+still supplies the `dxvk.conf`, DXVK 2.7.1 `d3d9.dll` and the equipment-fitting files. If CoA Custom replaces the
+DLL with a build whose fingerprint differs, AFK Realm deliberately leaves it alone and the tool or an upstream fix
+is needed.
 
 ## Install
 
