@@ -300,6 +300,35 @@ local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 end
 CharCreateRaceButtonMixin.SetRace = SetRace
 
+-- The "Selected Race" step button in the navigation column. CoA's own update only knows the icon table keyed
+-- by the client's race name; imported races can miss it and keep the full round atlas as their icon.
+local updateNav = CharacterCreate_UpdateNavigtationRaceButton
+if updateNav then
+	function CharacterCreate_UpdateNavigtationRaceButton(...)
+		local result = updateNav(...)
+		local race = listed[GetSelectedRace and GetSelectedRace() or 0]
+		local nav = race and CharacterCreateNavigationFrame and Enum and Enum.CharCreateSteps and
+			CharacterCreateNavigationFrame:GetButtonByIndex(Enum.CharCreateSteps.ClassRace)
+		if nav and nav.Icon then
+			local icon = race.icon
+			if (not icon or icon == "") and CHAR_CREATE_EXTRA_RACE_ICONS then
+				icon = CHAR_CREATE_EXTRA_RACE_ICONS[race.name or ""]
+			end
+			if not icon or icon == "" then
+				local female = GetSelectedSex and GetSelectedSex() == SEX_FEMALE
+				icon = "Interface\\Icons\\Achievement_Character_" .. (race.baseFile or "Human") .. (female and "_Female" or "_Male")
+			end
+			if SetPortraitToTexture then
+				SetPortraitToTexture(nav.Icon, icon)
+			else
+				nav.Icon:SetTexture(icon)
+			end
+			nav.Icon:SetTexCoord(0, 1, 0, 1)
+		end
+		return result
+	end
+end
+
 -- A side with more races than its columns hold scrolls: its races move by the mouse wheel over the buttons, or by
 -- its bar. The offset lives here, so it keeps its place when the races are laid out again.
 local SCROLL = { Alliance = { offset = 0 }, Horde = { offset = 0 } }
