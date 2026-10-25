@@ -214,6 +214,13 @@ def write_manifest():
         'patch': {
             'files': [
                 {'from': 'client/CustomRaces.lua', 'to': 'Interface\\GlueXML\\CustomRaces.lua', 'fill': client_fills()},
+                # CoA Custom's loading screens only for a CoA client; a stock client keeps the WoW screens.
+                {'from': 'client/LoadingScreens.dbc', 'to': 'DBFilesClient\\LoadingScreens.dbc',
+                 'when': [{'conf': CONF, 'key': 'CustomRaces.ClientRootFolder', 'default': '', 'notIn': ['']}]},
+                {'from': 'client/Interface/Glues/LoadingScreens/CoALoading.blp', 'to': 'Interface\\Glues\\LoadingScreens\\CoALoading.blp',
+                 'when': [{'conf': CONF, 'key': 'CustomRaces.ClientRootFolder', 'default': '', 'notIn': ['']}]},
+                {'from': 'client/Interface/Glues/LoadingScreens/CoALoadingWide.blp', 'to': 'Interface\\Glues\\LoadingScreens\\CoALoadingWide.blp',
+                 'when': [{'conf': CONF, 'key': 'CustomRaces.ClientRootFolder', 'default': '', 'notIn': ['']}]},
             ],
             'edits': client_edits(),
             # The 64-race patch of the game client (race numbers above 31): a DLL of the user's own, from CoA Custom,

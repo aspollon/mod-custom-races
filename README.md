@@ -57,10 +57,10 @@ page. If the CoA pack folder is deleted after installation, AFK Realm uses the `
 `Ascension.exe` and keeps the installed client-root files. An imported CoA race keeps its CoA number (Gnoll 83,
 Sethrak 82, Saberon 97, ...) even then; `CustomRaces.HighRaces` must be on for numbers above 63.
 
-**Loading screens.** AFK Realm itself always adds CoA Custom's loading screen (the Ilusixn Custom Races artwork) for
-every map, with a small `powered by AFK Realm` badge in the lower left. It does this without any module or race being
-installed, and its client patch uses a later archive than CoA Custom's `patch-ZZZD.MPQ` so the badge is not
-overridden. The artwork stays credited to CoA Custom/Ilusixn.
+**Loading screens.** With a CoA Custom client chosen, the module brings CoA Custom's loading screen (the Ilusixn
+Custom Races artwork) for every map, with a small `powered by AFK Realm` badge in the lower left. A stock client keeps
+the original WoW loading screens. The module's client patch uses a later archive than CoA Custom's `patch-ZZZD.MPQ`
+so the CoA screens and badge are not overridden. The artwork stays credited to CoA Custom/Ilusixn.
 
 Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
 of its base race (`RaceMaskOf`): it may do what its base race may do. Without MoreRaces a race above 31 stays off.
