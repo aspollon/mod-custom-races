@@ -138,6 +138,12 @@ For the client start crash, the client root needs a `dxvk.conf` **without**
 `dxvk.enableGraphicsPipelineLibrary`/`dxvk.trackPipelineLifetime`; those made the Esteria texture loader crash on
 a cold start. The supplied `d3d9.dll` (DXVK 2.7.1) belongs beside it. No DBC rows are changed for this.
 
+CoA Custom 1.9's `EsteriaAppearance.dll` also starts its texture worker before the D3D9 device and its first
+texture objects are ready. That is the remaining timing crash: it happens before login, and another GPU program
+hides it. `tools/esteria_start_delay.py` adds a two-second wait to the worker start (DLL RVA `0x41EF8`) as a
+version-checked workaround. The proper source fix is to queue the worker until the renderer signals that the D3D9
+device is ready; the tool is only for the current 414,720-byte DLL and refuses another build.
+
 ## Install
 
 **With AFK Realm** (0.9.1 or newer): *Modules*, add the module, build. *Modules › Custom races* chooses the races and

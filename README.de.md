@@ -24,6 +24,12 @@ Gegen den Start-Crash darf die `dxvk.conf` im Client-Root **kein**
 `dxvk.enableGraphicsPipelineLibrary`/`dxvk.trackPipelineLifetime` setzen; damit stürzte der Esteria-Texturlader
 beim Kaltstart ab. Die mitgelieferte `d3d9.dll` (DXVK 2.7.1) gehört daneben. Die DBCs bleiben unverändert.
 
+Die `EsteriaAppearance.dll` von CoA Custom 1.9 startet außerdem ihren Textur-Worker, bevor das D3D9-Gerät und
+die ersten Texturen fertig sind. Das ist der verbleibende Timing-Crash vor dem Login; eine zweite GPU-Anwendung
+verdeckt ihn nur. `tools/esteria_start_delay.py` ergänzt eine Zwei-Sekunden-Wartezeit am Worker-Start
+(DLL-RVA `0x41EF8`) als versionsgeprüfte Übergangslösung. Sauber wäre, den Worker erst nach dem Ready-Signal des
+Renderers zu starten; das Werkzeug ist nur für die aktuelle 414.720-Byte-DLL und verweigert andere Builds.
+
 ## Installation
 
 Am einfachsten mit [AFK Realm](https://github.com/aspollon/AFK-Realm): *Module → Module verwalten* fügt das Modul hinzu, baut den Server neu und bringt alles Nötige mit; die Einstellungsseite des Moduls ist auf Deutsch. Ohne AFK Realm: siehe das englische README.
