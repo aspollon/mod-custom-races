@@ -209,15 +209,23 @@ def write_manifest():
     path = os.path.join(ROOT, 'afk-realm.json')
     data = json.load(open(path))
     data['client'] = {
+        'addons': ['client/AddOns/AFKHideGear'],
         'clearCache': True,
         'patch': {
-            'files': [{'from': 'client/CustomRaces.lua', 'to': 'Interface\\GlueXML\\CustomRaces.lua', 'fill': client_fills()}],
+            'files': [
+                {'from': 'client/CustomRaces.lua', 'to': 'Interface\\GlueXML\\CustomRaces.lua', 'fill': client_fills()},
+            ],
             'edits': client_edits(),
             # The 64-race patch of the game client (race numbers above 31): a DLL of the user's own, from CoA Custom,
             # which AFK Realm puts next to Ascension.exe while CustomRaces.MoreRaces is on.
-            'rootFiles': [{'to': 'dinput8.dll',
-                           'from': {'setting': 'CustomRaces.MoreRacesFile', 'conf': CONF, 'default': '', 'text': True},
-                           'when': [{'conf': CONF, 'key': 'CustomRaces.MoreRaces', 'is': '1', 'default': '0'}]}],
+            'rootFiles': [
+                {'to': 'dinput8.dll',
+                 'from': {'setting': 'CustomRaces.MoreRacesFile', 'conf': CONF, 'default': '', 'text': True},
+                 'when': [{'conf': CONF, 'key': 'CustomRaces.MoreRaces', 'is': '1', 'default': '0'}]},
+                {'to': '', 'gameExe': True,
+                 'from': {'setting': 'CustomRaces.ClientExe', 'conf': CONF, 'default': '', 'text': True},
+                 'when': [{'conf': CONF, 'key': 'CustomRaces.ClientExe', 'default': '', 'notIn': ['']}]},
+            ],
             # Files next to the game .exe that a race needs as a whole (the Esteria appearance files, for example).
             'rootFolders': [{'from': {'setting': 'CustomRaces.ClientRootFolder', 'conf': CONF, 'default': '', 'text': True},
                              'zip': True}],

@@ -55,8 +55,19 @@ while this is on; the module ships no DLL. Importing a CoA Custom pack in AFK Re
 `CustomRaces.MoreRaces` and `CustomRaces.HighRaces` on automatically. Both also have visible switches on the race
 page. If the CoA pack folder is deleted after installation, AFK Realm uses the `dinput8.dll` already next to
 `Ascension.exe` and keeps the installed client-root files. An imported CoA race keeps its CoA number (Gnoll 83,
-Sethrak 82, Saberon 97, ...) even then; `CustomRaces.HighRaces` must be on for numbers above 63. Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
+Sethrak 82, Saberon 97, ...) even then; `CustomRaces.HighRaces` must be on for numbers above 63.
+
+**Loading screens.** AFK Realm itself always adds CoA Custom's loading screen (the Ilusixn Custom Races artwork) for
+every map, with a small `powered by AFK Realm` badge in the lower left. It does this without any module or race being
+installed, and its client patch uses a later archive than CoA Custom's `patch-ZZZD.MPQ` so the badge is not
+overridden. The artwork stays credited to CoA Custom/Ilusixn.
+
+Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
 of its base race (`RaceMaskOf`): it may do what its base race may do. Without MoreRaces a race above 31 stays off.
+
+CoA Custom 1.9 and newer draw the Esteria appearance rows in the character creation themselves
+(`COA_EsteriaRefresh`). `client/CustomRaces.lua` detects that and does not add the old second set of rows; older
+clients still get the rows from the module.
 
 **The character creation of the Ascension client** needs rules for the skins, faces, hair and underwear of every
 added race, or it crashes or paints wrong textures: every row playable, a face and an underwear for every skin colour,

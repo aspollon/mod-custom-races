@@ -225,6 +225,15 @@ local function Portrait(self, race, gender)
 		coords = RACE_ICON_TCOORDS and (RACE_ICON_TCOORDS[key] or RACE_ICON_TCOORDS[race.baseFile:upper() .. "_" .. gender])
 	end
 	if not coords then
+		-- The older round atlas has no entry for this race. Showing the full atlas leaves every
+		-- button with the same picture; use the base race's achievement portrait instead.
+		local base = (race.baseFile or "Human") .. (gender == "FEMALE" and "_Female" or "_Male")
+		local icon = "Interface\\Icons\\Achievement_Character_" .. base
+		if SetPortraitToTexture then
+			for _, texture in ipairs(textures) do
+				SetPortraitToTexture(texture, icon)
+			end
+		end
 		return
 	end
 	for _, texture in ipairs(textures) do
@@ -278,8 +287,14 @@ local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 	for _, texture in ipairs({ self:GetNormalTexture(), self:GetPushedTexture() }) do
 		texture:SetTexture(ROUND)
 	end
+	local nativeIcon = (CHAR_CREATE_COA_GENDER_ICONS and CHAR_CREATE_COA_GENDER_ICONS[string.upper(raceEnglishName or "") .. "_" .. (gender or "")]) or
+		(CHAR_CREATE_EXTRA_RACE_ICONS and CHAR_CREATE_EXTRA_RACE_ICONS[raceName or ""])
 	local result = setRace(self, raceName, raceEnglishName, gender, enabled)
-	Portrait(self, race, gender)
+	-- CoA 1.9 has its own icon table for the new races. Its SetRace has just drawn that icon; replacing
+	-- it with the generic round atlas is what made every many-race button look the same.
+	if not nativeIcon then
+		Portrait(self, race, gender)
+	end
 	OwnRacials(self, race)
 	return result
 end
@@ -859,6 +874,9 @@ end
 -- customization cycle only the five stock choices, which mix up the DLL's packed values (a choice that does nothing,
 -- or one that changes another). For these races the buttons go to the DLL, and there are as many as the race has
 -- choices. Taken over from CoA Custom (scripts/esteria/esteria_options.lua, from Esteria's CharacterCreate.lua).
+-- CoA 1.9 and later draw these rows themselves (COA_EsteriaRefresh). Do not add the old rows too:
+-- every label and value would appear twice on the character creation screen.
+if not (_G.CoACustomizationRow1 or type(_G.COA_EsteriaRefresh) == "function") then
 do
 	-- CoA Custom's race number -> Esteria's, as the DLL's choices are told apart. The file name is the safer key:
 	-- an imported race keeps its CoA file (VulperaEsteria) but may get another number in this client.
@@ -936,6 +954,15 @@ do
 	end
 
 	local function Refresh()
+		if _G.CoACustomizationRow1 or type(_G.COA_EsteriaRefresh) == "function" then
+			-- CoA's own screen took over after this file loaded: remove the extra rows.
+			for i = 6, MAX do
+				if _G[NAME .. i] then
+					_G[NAME .. i]:Hide()
+				end
+			end
+			return
+		end
 		local first = _G[NAME .. "1"]
 		if not first then
 			return
@@ -1078,4 +1105,5 @@ do
 			end
 		end
 	end)
+end
 end
