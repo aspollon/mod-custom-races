@@ -54,7 +54,8 @@ while this is on; the module ships no DLL. Importing a CoA Custom pack in AFK Re
 `dinput8.dll` in `files\client`, `client_root`, the pack root or the race folder's `_Client` copy and switches
 `CustomRaces.MoreRaces` and `CustomRaces.HighRaces` on automatically. Both also have visible switches on the race
 page. If the CoA pack folder is deleted after installation, AFK Realm uses the `dinput8.dll` already next to
-`Ascension.exe` and keeps the installed client-root files. Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
+`Ascension.exe` and keeps the installed client-root files. An imported CoA race keeps its CoA number (Gnoll 83,
+Sethrak 82, Saberon 97, ...) even then; `CustomRaces.HighRaces` must be on for numbers above 63. Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
 of its base race (`RaceMaskOf`): it may do what its base race may do. Without MoreRaces a race above 31 stays off.
 
 **The character creation of the Ascension client** needs rules for the skins, faces, hair and underwear of every
