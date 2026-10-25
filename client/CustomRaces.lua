@@ -959,7 +959,9 @@ do
 			end
 		end
 		local race = EsteriaRace()
-		if race and race ~= lastRace then
+		-- A paid customization opens the same screen for an existing character: keep its saved look, so a single
+		-- option can be changed. Only a new character starts from the random/first-choice look of the creator.
+		if race and race ~= lastRace and not PAID_SERVICE_TYPE then
 			-- their first choices are bald: start from a random look (as Esteria's screen does), else put the hair on by
 			-- stepping the hair style once and back
 			if RANDOM[race] then

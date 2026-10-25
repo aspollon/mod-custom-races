@@ -105,8 +105,11 @@ and their side from the core's race table.
   the race is switched on again.
 - **The module removed** through AFK Realm: AFK Realm runs `data/sql/remove`, which does the same for all races of the
   module, and undoes the module's patch with the next build.
-- **The game client**: the client patch only adds files to the patch AFK Realm builds (`Data\patch-Y.MPQ`); the
-  client itself is never changed. Built again without the module, the patch no longer has the races.
+- **The game client**: the client patch only adds files to the patch AFK Realm builds (`Data\patch-Y.MPQ`); without
+  the module the patch no longer has the races. The one exception is the game exe of CoA Custom, which already
+  carries its own Esteria patch: `tools/customize_extra_patch.py` adds one small thunk there so the customize
+  packet can carry the sixth appearance value described above. Keep the previous `Ascension.exe` beside it; the
+  tool refuses an unknown client instead of guessing.
 
 ## Settings (`mod_custom_races.conf`)
 
@@ -120,13 +123,29 @@ and their side from the core's race table.
 | `CustomRaces.<race>.Appearance` | 0 | The looks it keeps beyond the five bytes of the game: 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit number (Haranir). Stored in `characters.extraAppearance` (added by `data/sql/db-characters`), sent with the character list (marks HXE1/HXE2) and to the players nearby, as CoA Custom's server does. |
 | `CustomRaces.<race>.Source`, `.Copy`, `.Name`, `.Prefix`, `.File`, `.MaleDisplay`, `.FemaleDisplay`, `.MaleOnly` | from the client | Its row in the client's ChrRaces.dbc and what it holds; written by the setup page. |
 
+### The sixth value in the customize screen
+
+The stock client's `CMSG_CHAR_CUSTOMIZE` has exactly gender and the five ordinary appearance bytes. The full
+Esteria selector shows the sixth value in the creation, but a later customize used to leave the saved
+`extraAppearance` untouched. `patches/core-customize-extra.patch` makes the server read it, and
+`tools/customize_extra_patch.py` adds a thunk to CoA Custom's patched `Ascension.exe` that appends it. The bytes
+come from the same `HighmountainFields` the preview uses: one byte for Highmountain/Earthen, eight bytes plus the
+`HRC1` trailer for Haranir. The tool also sets `EsteriaAppearanceContext` before the character-select hook, so a
+cold start resolves the Esteria sections like the preview. It deliberately leaves the unit hooks alone; they also
+run for NPCs and bots, and a non-character pointer there crashed the client when entering the world.
+
+For the client start crash, the client root needs a `dxvk.conf` **without**
+`dxvk.enableGraphicsPipelineLibrary`/`dxvk.trackPipelineLifetime`; those made the Esteria texture loader crash on
+a cold start. The supplied `d3d9.dll` (DXVK 2.7.1) belongs beside it. No DBC rows are changed for this.
+
 ## Install
 
 **With AFK Realm** (0.9.1 or newer): *Modules*, add the module, build. *Modules › Custom races* chooses the races and
 their base races and gives them their numbers; *Modules › Game client › Install* builds the client patch from your
 game client and puts it into your game. Every player needs the client patch (*Export as ZIP* gives it to the others).
 
-**By hand:** copy the module into `modules/` of the CoA core, apply `patches/core-custom-races.patch`, build, set the
+**By hand:** copy the module into `modules/` of the CoA core, apply `patches/core-custom-races.patch` and then
+`patches/core-customize-extra.patch`, build, set the
 options (the values of each race from the client's `ChrRaces.dbc`; the `.conf.dist` shows them for the Goblin). The client patch is an MPQ that loads after the client's own (for example `Data\patch-Y.MPQ`); what it holds
 for each chosen race is described in `afk-realm.json` (`client.patch`, one set of changes done `forEach` race): the race's row of `ChrRaces.dbc` made playable for
 the faction of its base race (copied to its number when it has none of its own), its classes in `CharBaseInfo.dbc`,

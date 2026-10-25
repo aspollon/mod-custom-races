@@ -1,0 +1,93 @@
+diff --git a/src/server/game/Entities/Player/PlayerMisc.cpp b/src/server/game/Entities/Player/PlayerMisc.cpp
+--- a/src/server/game/Entities/Player/PlayerMisc.cpp
++++ b/src/server/game/Entities/Player/PlayerMisc.cpp
+@@ -125,6 +125,12 @@
+     stmt->SetData(6, customizeInfo->Guid.GetCounter());
+ 
+     CharacterDatabase.ExecuteOrAppend(trans, stmt);
++
++    // mod-custom-races: the sixth byte (or Haranir's 64-bit value) is not part of the stock
++    // customize packet. Keep it only when the patched client actually sent it.
++    if (customizeInfo->HasExtraAppearance)
++        trans->Append("UPDATE characters SET extraAppearance = {} WHERE guid = {}",
++            customizeInfo->ExtraAppearance, customizeInfo->Guid.GetCounter());
+ }
+ 
+ void Player::SendAttackSwingDeadTarget()
+diff --git a/src/server/game/Handlers/CharacterHandler.cpp b/src/server/game/Handlers/CharacterHandler.cpp
+--- a/src/server/game/Handlers/CharacterHandler.cpp
++++ b/src/server/game/Handlers/CharacterHandler.cpp
+@@ -1821,6 +1821,28 @@
+              >> customizeInfo->FacialHair
+              >> customizeInfo->Face;
+ 
++    // mod-custom-races: EsteriaAppearance.dll appends the looks beyond the five stock bytes.
++    // The stock client ends here; only the patched client sends this extension.
++    uint32 const extraSize = recvData.size() - recvData.rpos();
++    if (extraSize == 1)
++    {
++        uint8 extra = 0;
++        recvData >> extra;
++        customizeInfo->ExtraAppearance = extra;
++        customizeInfo->ExtraAppearanceSize = 1;
++    }
++    else if (extraSize == 12)
++    {
++        uint64 extra = 0;
++        uint32 mark = 0;
++        recvData >> extra >> mark;
++        if (mark == 0x31435248) // HRC1
++        {
++            customizeInfo->ExtraAppearance = extra;
++            customizeInfo->ExtraAppearanceSize = 8;
++        }
++    }
++
+     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHAR_CUSTOMIZE_INFO);
+     stmt->SetData(0, customizeInfo->Guid.GetCounter());
+ 
+@@ -1846,7 +1868,7 @@
+ 
+     Field* fields = result->Fetch();
+     std::string oldName = fields[0].Get<std::string>();
+-    //uint8 plrRace = fields[1].Get<uint8>();
++    uint8 plrRace = fields[1].Get<uint8>();
+     //uint8 plrClass = fields[2].Get<uint8>();
+     //uint8 plrGender = fields[3].Get<uint8>();
+     uint32 atLoginFlags = fields[4].Get<uint16>();
+@@ -1855,6 +1877,19 @@
+     {
+         SendCharCustomize(CHAR_CREATE_ERROR, customizeInfo.get());
+         return;
++    }
++
++    if (customizeInfo->ExtraAppearanceSize)
++    {
++        uint8 const kind = ExtraAppearanceKind(plrRace);
++        bool const valid = (kind == 1 && customizeInfo->ExtraAppearanceSize == 1)
++            || (kind == 2 && customizeInfo->ExtraAppearanceSize == 8);
++        if (!valid)
++        {
++            SendCharCustomize(CHAR_CREATE_ERROR, customizeInfo.get());
++            return;
++        }
++        customizeInfo->HasExtraAppearance = true;
+     }
+ 
+     atLoginFlags &= ~AT_LOGIN_CUSTOMIZE;
+diff --git a/src/server/game/Server/WorldSession.h b/src/server/game/Server/WorldSession.h
+--- a/src/server/game/Server/WorldSession.h
++++ b/src/server/game/Server/WorldSession.h
+@@ -409,6 +409,12 @@
+     uint8 HairStyle = 0;
+     uint8 HairColor = 0;
+     uint8 FacialHair = 0;
++
++    // mod-custom-races: EsteriaAppearance.dll appends the appearance beyond the five stock bytes.
++    // 0 = the client sent none, 1 = one byte, 8 = a 64-bit value.
++    uint8 ExtraAppearanceSize = 0;
++    uint64 ExtraAppearance = 0;
++    bool HasExtraAppearance = false;
+ };
+ 
+ struct CharacterFactionChangeInfo : public CharacterCustomizeInfo

@@ -6,6 +6,12 @@
    "target": "core",
    "file": "patches/core-custom-races.patch",
    "why": "A race this module makes playable starts in the outfits of its base race, may learn the skills that race may learn, and gets the racial abilities of Conquest of Azeroth that race gets."
+  },
+  {
+   "name": "Customize keeps the looks beyond the five bytes",
+   "target": "core",
+   "file": "patches/core-customize-extra.patch",
+   "why": "The game client can append the sixth appearance value (or Haranir's 64-bit value) to the customize packet; the server stores it with the character instead of keeping the old value."
   }
  ],
  "client": {

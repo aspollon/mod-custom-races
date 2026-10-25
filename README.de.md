@@ -8,6 +8,22 @@ Mehr spielbare Rassen für **Conquest of Azeroth** (CoA), ein AzerothCore-Modul.
 
 Der Spielclient von Conquest of Azeroth bringt die Modelle, Häute und Frisuren vieler Rassen mit, die kein Spieler wählen kann: Goblins, Worgen, Pandaren, Vulpera, Vrykul und mehr. Dieses Modul macht sie spielbar. Jede neue Rasse lehnt sich an eine Standardrasse an – Startort, Werte, Volksfähigkeiten und Fraktion –, behält aber ihr eigenes Aussehen. Der Client-Patch wird aus dem eigenen Spielclient des Spielers gebaut; das Modul bringt keine Modelle mit. **Testversion.**
 
+## Anpassen behält das sechste Aussehen
+
+Das Fenster zum Anpassen eines vorhandenen Charakters schickt im Stock-Paket nur Geschlecht und die fünf
+gewöhnlichen Aussehensbytes. Die sechste Esteria-Auswahl blieb deshalb beim Speichern auf dem alten Wert.
+`patches/core-customize-extra.patch` lässt den Server den vom gepatchten Client angehängten Wert lesen;
+`tools/customize_extra_patch.py` ergänzt dafür einen Thunk in CoA Customs bereits gepatchter `Ascension.exe`.
+Die Werte kommen aus denselben `HighmountainFields` wie die Vorschau: ein Byte für Highmountain/Irdene, acht
+Bytes plus `HRC1` für Haranir. Der Thunk setzt außerdem `EsteriaAppearanceContext` vor dem Charakterauswahl-Hook,
+damit auch ein Kaltstart dieselben Esteria-Sections wie die Vorschau benutzt. Die Unit-Hooks bleiben absichtlich
+unangetastet: Sie laufen auch für NPCs und Bots; ein falscher Charakterzeiger dort ließ den Client beim
+Weltbetreten abstürzen.
+
+Gegen den Start-Crash darf die `dxvk.conf` im Client-Root **kein**
+`dxvk.enableGraphicsPipelineLibrary`/`dxvk.trackPipelineLifetime` setzen; damit stürzte der Esteria-Texturlader
+beim Kaltstart ab. Die mitgelieferte `d3d9.dll` (DXVK 2.7.1) gehört daneben. Die DBCs bleiben unverändert.
+
 ## Installation
 
 Am einfachsten mit [AFK Realm](https://github.com/aspollon/AFK-Realm): *Module → Module verwalten* fügt das Modul hinzu, baut den Server neu und bringt alles Nötige mit; die Einstellungsseite des Moduls ist auf Deutsch. Ohne AFK Realm: siehe das englische README.
