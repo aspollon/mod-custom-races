@@ -41,6 +41,10 @@ Client-Root liefert weiterhin `dxvk.conf`, die DXVK-2.7.1-`d3d9.dll` und die Equ
 Custom die DLL durch einen Build mit anderem Fingerprint, lässt AFK Realm sie absichtlich unverändert; dann sind
 das Werkzeug oder ein Fix im CoA-Client nötig.
 
+AFK Realm 1.0.52 und neuer haben für den 64-Rassen-Patch und die hohen Rassennummern sichtbare Schalter auf der
+Rassenseite. Wird der CoA-Pack-Ordner nach der Installation gelöscht, benutzt AFK Realm die bereits neben
+`Ascension.exe` liegende `dinput8.dll` und behält die installierten Client-Root-Dateien.
+
 ## Installation
 
 Am einfachsten mit [AFK Realm](https://github.com/aspollon/AFK-Realm): *Module → Module verwalten* fügt das Modul hinzu, baut den Server neu und bringt alles Nötige mit; die Einstellungsseite des Moduls ist auf Deutsch. Ohne AFK Realm: siehe das englische README.
