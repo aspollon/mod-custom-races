@@ -198,8 +198,17 @@ function CharCreateRaceButtonMixin:OnLoad()
 	self:SetFaction("Alliance")
 end
 
--- The portrait, always round like those of the stock races: a portrait of the older round set, an icon of the game cut
--- round, or the round portrait of a stock race - its base race when nothing better is known.
+-- The portrait: a portrait of the older round set, the round portrait of a stock race (its base race when nothing
+-- better is known), or an icon of the game, cut a little at the edges. SetPortraitToTexture is not used for the icons:
+-- every call makes a new round texture, the buttons are set again on each layout and scroll, and with many races the
+-- client runs out of them - from then on every button showed the whole portrait sheet.
+local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }
+local function StockCoords(key, base, gender)
+	if not RACE_ICON_TCOORDS then
+		return nil
+	end
+	return (key and RACE_ICON_TCOORDS[key]) or RACE_ICON_TCOORDS[base .. "_" .. gender] or RACE_ICON_TCOORDS["HUMAN_" .. gender]
+end
 local function Portrait(self, race, gender)
 	if not race then
 		return
@@ -208,35 +217,24 @@ local function Portrait(self, race, gender)
 	if race.icon and race.icon ~= "" then
 		p = { kind = "icon", male = race.icon, female = race.icon }
 	end
-	local textures = { self:GetNormalTexture(), self:GetPushedTexture() }
-	if p.kind == "icon" and SetPortraitToTexture then
-		local file = gender == "FEMALE" and p.female or p.male
-		for _, texture in ipairs(textures) do
-			texture:SetTexCoord(0, 1, 0, 1)
-			SetPortraitToTexture(texture, file)
-		end
-		return
-	end
 	local file, coords = ROUND, nil
-	if p.kind == "old" then
+	if p.kind == "icon" then
+		file, coords = (gender == "FEMALE" and p.female or p.male), ICON_CROP
+	elseif p.kind == "old" then
 		file, coords = OLDROUND, (gender == "FEMALE" and p.female or p.male)
 	else
-		local key = (p.kind == "round" and p.key or race.baseFile:upper()) .. "_" .. gender
-		coords = RACE_ICON_TCOORDS and (RACE_ICON_TCOORDS[key] or RACE_ICON_TCOORDS[race.baseFile:upper() .. "_" .. gender])
+		coords = StockCoords(p.kind == "round" and p.key and (p.key .. "_" .. gender), race.baseFile:upper(), gender)
+	end
+	if not file or not coords then
+		file, coords = ROUND, StockCoords(nil, race.baseFile:upper(), gender)
 	end
 	if not coords then
-		-- The older round atlas has no entry for this race. Showing the full atlas leaves every
-		-- button with the same picture; use the base race's achievement portrait instead.
-		local base = (race.baseFile or "Human") .. (gender == "FEMALE" and "_Female" or "_Male")
-		local icon = "Interface\\Icons\\Achievement_Character_" .. base
-		if SetPortraitToTexture then
-			for _, texture in ipairs(textures) do
-				SetPortraitToTexture(texture, icon)
-			end
-		end
-		return
+		-- The round atlas has no entry for this race. Showing the full atlas leaves every button with the same
+		-- picture; use the base race's achievement portrait instead.
+		file = "Interface\\Icons\\Achievement_Character_" .. (race.baseFile or "Human") .. (gender == "FEMALE" and "_Female" or "_Male")
+		coords = ICON_CROP
 	end
-	for _, texture in ipairs(textures) do
+	for _, texture in ipairs({ self:GetNormalTexture(), self:GetPushedTexture() }) do
 		texture:SetTexture(file)
 		texture:SetTexCoord(unpack(coords))
 	end
@@ -318,12 +316,8 @@ if updateNav then
 				local female = GetSelectedSex and GetSelectedSex() == SEX_FEMALE
 				icon = "Interface\\Icons\\Achievement_Character_" .. (race.baseFile or "Human") .. (female and "_Female" or "_Male")
 			end
-			if SetPortraitToTexture then
-				SetPortraitToTexture(nav.Icon, icon)
-			else
-				nav.Icon:SetTexture(icon)
-			end
-			nav.Icon:SetTexCoord(0, 1, 0, 1)
+			nav.Icon:SetTexture(icon)                 -- not SetPortraitToTexture: see Portrait above
+			nav.Icon:SetTexCoord(unpack(ICON_CROP))
 		end
 		return result
 	end

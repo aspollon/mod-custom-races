@@ -82,12 +82,12 @@ empty textures pointing at a NUL byte (offset 0 of the client's string block is 
 by ilusixn for CoA Custom (https://github.com/ilusixn/azerothcore-wotlk-coa); the client patch applies them to every
 race of the module.
 
-**Icons** on the race choice: the race's own icon from the race folder (`_Icons\CoA_Race_<race>.blp`), shown round.
+**Icons** on the race choice: the race's own icon from the race folder (`_Icons\CoA_Race_<race>.blp`), shown with its edges trimmed.
 **Placement**: the stock races keep a column at the edge of their side, the added races get columns of their own next
 to it, from the top.
 
 **Portraits** on the race choice are round like those of the stock races: an older round portrait of the game (Goblin,
-Worgen), an icon of the game cut round, or the round portrait of its base race.
+Worgen), an icon of the game (its edges trimmed), or the round portrait of its base race.
 
 ## What a new race is
 
