@@ -10,7 +10,40 @@
 -- LoadOnDemand AppearanceUI is opened and also catches it when it is loaded
 -- by another add-on first.
 
-local FALLBACK = "transmog-background-race-human"
+local function FallbackAtlas()
+    local _, race = UnitRace("player")
+    race = race and race:lower() or ""
+    local function has(text)
+        return race:find(text, 1, true) ~= nil
+    end
+
+    if has("highmountain") or has("tauren") then
+        return "transmog-background-race-tauren"
+    elseif has("orc") then
+        return "transmog-background-race-orc"
+    elseif has("troll") then
+        return "transmog-background-race-troll"
+    elseif has("bloodelf") or has("blood elf") then
+        return "transmog-background-race-bloodelf"
+    elseif has("nightelf") or has("night elf") then
+        return "transmog-background-race-nightelf"
+    elseif has("dwarf") then
+        return "transmog-background-race-dwarf"
+    elseif has("gnome") then
+        return "transmog-background-race-gnome"
+    elseif has("draenei") then
+        return "transmog-background-race-draenei"
+    elseif has("undead") or has("scourge") or has("darkfallen") then
+        return "transmog-background-race-scourge"
+    elseif has("human") then
+        return "transmog-background-race-human"
+    end
+
+    if UnitFactionGroup("player") == "Horde" then
+        return "transmog-background-race-orc"
+    end
+    return "transmog-background-race-human"
+end
 
 local function Fix()
     if AppearanceUtil and AppearanceUtil._afkBackgroundAtlasFixed then
@@ -29,7 +62,7 @@ local function Fix()
         if atlas and AtlasUtil:AtlasExists(atlas) then
             return atlas
         end
-        return FALLBACK
+        return FallbackAtlas()
     end
 
     AppearanceUtil._afkBackgroundAtlasFixed = true
