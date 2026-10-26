@@ -62,6 +62,12 @@ Custom Races artwork) for every map, with a small `powered by AFK Realm` badge i
 the original WoW loading screens. The module's client patch uses a later archive than CoA Custom's `patch-ZZZD.MPQ`
 so the CoA screens and badge are not overridden. The artwork stays credited to CoA Custom/Ilusixn.
 
+**Wardrobe preview.** CoA's `Ascension_AppearanceUI` builds its background atlas from the race name
+(`transmog-background-race-<race>`). Only the ten stock races have such an atlas. For a custom race the
+`SetAtlas` call throws in `OnLoad` before the category callbacks are registered, and the Wardrobe preview then
+stops updating when an item is selected. The `AFKAppearanceFix` add-on keeps the stock atlas for its race and
+uses a stock background only when the atlas is missing; it ships with the module's client add-ons.
+
 Race masks are 32 bits wide, so the core patch gives a race above 32 the bit
 of its base race (`RaceMaskOf`): it may do what its base race may do. Without MoreRaces a race above 31 stays off.
 

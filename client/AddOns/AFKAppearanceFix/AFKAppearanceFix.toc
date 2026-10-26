@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: AFK Appearance Fix
+## Notes: Keeps the CoA Wardrobe preview working for custom races whose transmog background atlas is missing.
+## Author: AFK Realm
+## Version: 1.0
+AFKAppearanceFix.lua

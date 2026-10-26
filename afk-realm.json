@@ -16,7 +16,8 @@
  ],
  "client": {
   "addons": [
-   "client/AddOns/AFKHideGear"
+   "client/AddOns/AFKHideGear",
+   "client/AddOns/AFKAppearanceFix"
   ],
   "clearCache": true,
   "patch": {

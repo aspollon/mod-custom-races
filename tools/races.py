@@ -209,7 +209,7 @@ def write_manifest():
     path = os.path.join(ROOT, 'afk-realm.json')
     data = json.load(open(path))
     data['client'] = {
-        'addons': ['client/AddOns/AFKHideGear'],
+        'addons': ['client/AddOns/AFKHideGear', 'client/AddOns/AFKAppearanceFix'],
         'clearCache': True,
         'patch': {
             'files': [
