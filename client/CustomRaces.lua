@@ -199,10 +199,29 @@ function CharCreateRaceButtonMixin:OnLoad()
 end
 
 -- The portrait: a portrait of the older round set, the round portrait of a stock race (its base race when nothing
--- better is known), or an icon of the game, cut a little at the edges. SetPortraitToTexture is not used for the icons:
--- every call makes a new round texture, the buttons are set again on each layout and scroll, and with many races the
--- client runs out of them - from then on every button showed the whole portrait sheet.
+-- better is known), or an icon of the game with the same round mask as the stock portraits. SetPortraitToTexture
+-- creates a round texture for the button; calling it again for the same button and icon would add another one, so the
+-- result is remembered per texture. The buttons are set again on each layout and scroll; only a changed icon gets a
+-- new round texture.
 local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }
+local ROUNDED = setmetatable({}, { __mode = "k" })
+local function RoundIcon(texture, file)
+	if not file or file == "" then
+		return false
+	end
+	if ROUNDED[texture] == file then
+		texture:SetTexCoord(0, 1, 0, 1)
+		return true
+	end
+	if SetPortraitToTexture then
+		texture:SetTexCoord(0, 1, 0, 1)
+		if pcall(SetPortraitToTexture, texture, file) then
+			ROUNDED[texture] = file
+			return true
+		end
+	end
+	return false
+end
 local function StockCoords(key, base, gender)
 	if not RACE_ICON_TCOORDS then
 		return nil
@@ -217,26 +236,29 @@ local function Portrait(self, race, gender)
 	if race.icon and race.icon ~= "" then
 		p = { kind = "icon", male = race.icon, female = race.icon }
 	end
-	local file, coords = ROUND, nil
+	local file, coords, round = ROUND, nil, false
 	if p.kind == "icon" then
-		file, coords = (gender == "FEMALE" and p.female or p.male), ICON_CROP
+		file, coords, round = (gender == "FEMALE" and p.female or p.male), ICON_CROP, true
 	elseif p.kind == "old" then
 		file, coords = OLDROUND, (gender == "FEMALE" and p.female or p.male)
 	else
 		coords = StockCoords(p.kind == "round" and p.key and (p.key .. "_" .. gender), race.baseFile:upper(), gender)
 	end
 	if not file or not coords then
-		file, coords = ROUND, StockCoords(nil, race.baseFile:upper(), gender)
+		file, coords, round = ROUND, StockCoords(nil, race.baseFile:upper(), gender), false
 	end
 	if not coords then
 		-- The round atlas has no entry for this race. Showing the full atlas leaves every button with the same
 		-- picture; use the base race's achievement portrait instead.
 		file = "Interface\\Icons\\Achievement_Character_" .. (race.baseFile or "Human") .. (gender == "FEMALE" and "_Female" or "_Male")
-		coords = ICON_CROP
+		coords, round = ICON_CROP, true
 	end
 	for _, texture in ipairs({ self:GetNormalTexture(), self:GetPushedTexture() }) do
-		texture:SetTexture(file)
-		texture:SetTexCoord(unpack(coords))
+		if not (round and RoundIcon(texture, file)) then
+			ROUNDED[texture] = nil
+			texture:SetTexture(file)
+			texture:SetTexCoord(unpack(coords))
+		end
 	end
 end
 
@@ -282,14 +304,18 @@ local function SetRace(self, raceName, raceEnglishName, gender, enabled)
 	elseif not GetFlavorText("RACE_INFO_" .. raceEnglishName, gender) then
 		_G["RACE_INFO_" .. raceEnglishName] = raceName
 	end
-	for _, texture in ipairs({ self:GetNormalTexture(), self:GetPushedTexture() }) do
-		texture:SetTexture(ROUND)
-	end
 	local nativeIcon = (CHAR_CREATE_COA_GENDER_ICONS and CHAR_CREATE_COA_GENDER_ICONS[string.upper(raceEnglishName or "") .. "_" .. (gender or "")]) or
 		(CHAR_CREATE_EXTRA_RACE_ICONS and CHAR_CREATE_EXTRA_RACE_ICONS[raceName or ""])
+	if nativeIcon or not race then
+		-- CoA's own table and the stock fallback use the round atlas; its SetRace only changes the coordinates.
+		for _, texture in ipairs({ self:GetNormalTexture(), self:GetPushedTexture() }) do
+			texture:SetTexture(ROUND)
+			ROUNDED[texture] = nil
+		end
+	end
 	local result = setRace(self, raceName, raceEnglishName, gender, enabled)
-	-- CoA 1.9 has its own icon table for the new races. Its SetRace has just drawn that icon; replacing
-	-- it with the generic round atlas is what made every many-race button look the same.
+	-- CoA 1.9 has its own icon table for the new races; replacing those icons with the generic round
+	-- atlas is what made every many-race button look the same.
 	if not nativeIcon then
 		Portrait(self, race, gender)
 	end
@@ -316,8 +342,10 @@ if updateNav then
 				local female = GetSelectedSex and GetSelectedSex() == SEX_FEMALE
 				icon = "Interface\\Icons\\Achievement_Character_" .. (race.baseFile or "Human") .. (female and "_Female" or "_Male")
 			end
-			nav.Icon:SetTexture(icon)                 -- not SetPortraitToTexture: see Portrait above
-			nav.Icon:SetTexCoord(unpack(ICON_CROP))
+			if not RoundIcon(nav.Icon, icon) then
+				nav.Icon:SetTexture(icon)
+				nav.Icon:SetTexCoord(unpack(ICON_CROP))
+			end
 		end
 		return result
 	end
