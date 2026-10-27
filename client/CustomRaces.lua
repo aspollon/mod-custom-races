@@ -42,6 +42,13 @@ local KNOWN = {
 }
 -- The stock races a race can lean on: name in the settings -> file name of the client.
 local BASE_FILES = { Human = "Human", Orc = "Orc", Dwarf = "Dwarf", NightElf = "NightElf", Undead = "Scourge", Tauren = "Tauren", Gnome = "Gnome", Troll = "Troll", BloodElf = "BloodElf", Draenei = "Draenei" }
+-- Races whose tables still have a female display or row although the game has no female model. Kept here as
+-- well as in AFK Realm, so an older race folder cannot offer the female button for them.
+local MALE_ONLY = {
+	FelOrc = true, Broken = true, Vrykul = true, Tuskarr = true, Taunka = true, ForestTroll = true,
+	IceTroll = true, Skeleton = true, NorthrendSkeleton = true, Troglodyte = true, ThinHuman = true,
+	Gnoll = true, Saberon = true,
+}
 -- @KNOWN END
 
 if not CharCreateRaceButtonsFrame or not CharCreateRaceButtonMixin or not CharacterCreateEnumerateRaces then
@@ -66,6 +73,7 @@ local BY_NAME, BY_FILE = {}, {}
 for _, race in ipairs(RACES) do
 	local known = KNOWN[race.key] or {}
 	race.portrait = known.portrait
+	race.maleOnly = race.maleOnly or MALE_ONLY[race.key] or false
 	race.base = BASE_FILES[race.base] and race.base or "Human"
 	race.baseFile = BASE_FILES[race.base]
 	BY_NAME[Plain(race.name)] = race
