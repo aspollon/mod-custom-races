@@ -42,6 +42,7 @@ local KNOWN = {
 }
 -- The stock races a race can lean on: name in the settings -> file name of the client.
 local BASE_FILES = { Human = "Human", Orc = "Orc", Dwarf = "Dwarf", NightElf = "NightElf", Undead = "Scourge", Tauren = "Tauren", Gnome = "Gnome", Troll = "Troll", BloodElf = "BloodElf", Draenei = "Draenei" }
+-- @KNOWN END
 -- Races whose tables still have a female display or row although the game has no female model. Kept here as
 -- well as in AFK Realm, so an older race folder cannot offer the female button for them.
 local MALE_ONLY = {
@@ -49,7 +50,6 @@ local MALE_ONLY = {
 	IceTroll = true, Skeleton = true, NorthrendSkeleton = true, Troglodyte = true, ThinHuman = true,
 	Gnoll = true, Saberon = true,
 }
--- @KNOWN END
 
 if not CharCreateRaceButtonsFrame or not CharCreateRaceButtonMixin or not CharacterCreateEnumerateRaces then
 	return
