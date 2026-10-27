@@ -6,7 +6,7 @@ sometimes reaches `call dword ptr [eax+0x40]` with an invalid COM pointer
 (EsteriaAppearance.dll + 0x1E187) and the client crashes before the login screen.
 Running another GPU-heavy program hides the timing race; it is not a fix.
 
-This tool adds a two-second Sleep to the worker start routine at DLL RVA 0x41EF8.
+This tool adds a ten-second Sleep to the worker start routine at DLL RVA 0x41EF8.
 The Sleep import is resolved through the DLL's own relocated IAT; no absolute
 addresses are written.  It is a version-specific workaround for the current
 414,720-byte CoA Custom 1.9 DLL.  On another build the fingerprints do not match
@@ -30,7 +30,7 @@ THREAD_BEFORE = bytes.fromhex("6a0c6828160610")
 RESUME = 0x10041EFF
 THUNK_VA = 0x10054560
 THUNK = bytes.fromhex(
-    "e800000000582d654505006068d0070000ff908850050061"
+    "e800000000582d654505006810270000ff908850050061"
     "6a0c8d882816060051e979d9feff"
 )
 
@@ -85,7 +85,7 @@ def patch(source: Path, output: Path) -> dict:
         "output_sha256": hashlib.sha256(data).hexdigest(),
         "thread_start": hex(THREAD_START),
         "thunk": hex(THUNK_VA),
-        "delay_ms": 2000,
+        "delay_ms": 10000,
     }
 
 

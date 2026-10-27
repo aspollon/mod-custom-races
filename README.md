@@ -168,11 +168,11 @@ a cold start. The supplied `d3d9.dll` (DXVK 2.7.1) belongs beside it. No DBC row
 
 CoA Custom 1.9's `EsteriaAppearance.dll` also starts its texture worker before the D3D9 device and its first
 texture objects are ready. That is the remaining timing crash: it happens before login, and another GPU program
-hides it. `tools/esteria_start_delay.py` adds a two-second wait to the worker start (DLL RVA `0x41EF8`) as a
+hides it. `tools/esteria_start_delay.py` adds a ten-second wait to the worker start (DLL RVA `0x41EF8`) as a
 version-checked workaround. The proper source fix is to queue the worker until the renderer signals that the D3D9
 device is ready; the tool is only for the current 414,720-byte DLL and refuses another build.
 
-AFK Realm 1.0.50 and newer apply this delay automatically to a temporary copy of the same DLL; the client root
+AFK Realm 1.0.64 and newer apply this delay automatically to a temporary copy of the same DLL; the client root
 still supplies the `dxvk.conf`, DXVK 2.7.1 `d3d9.dll` and the equipment-fitting files. If CoA Custom replaces the
 DLL with a build whose fingerprint differs, AFK Realm deliberately leaves it alone and the tool or an upstream fix
 is needed.
