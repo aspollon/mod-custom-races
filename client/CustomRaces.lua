@@ -48,7 +48,7 @@ if not CharCreateRaceButtonsFrame or not CharCreateRaceButtonMixin or not Charac
 	return
 end
 
-local BUTTONS = 64                 -- race buttons: with the 64-race patch the client lists up to 63 races
+local BUTTONS = 64                 -- race buttons made at load; more are made when the client lists more races
 local ROUND = "Interface\\Glues\\CharacterCreate\\UI-CHARACTERCREATE-RACES_Round"
 local OLDROUND = "Interface\\Glues\\CharacterCreate\\UI-CHARACTERCREATE-RACESROUND"
 
@@ -371,18 +371,30 @@ local function OnRaceWheel(self, delta)
 	ScrollWheel(self.faction or "Alliance", delta)
 end
 
-MAX_RACES = BUTTONS
-for i = 1, BUTTONS do
-	local button = _G["CharCreateRaceButton" .. i]
-	if not button then
-		button = CreateFrame("CheckButton", "CharCreateRaceButton" .. i, CharCreateRaceButtonsFrame, "CharCreateRaceButtonTemplate")
-		button:SetID(i)
-		button:Hide()
+-- The client's character creation goes through CharCreateRaceButton1..n for every race it lists; a race without its
+-- button stopped it with "attempt to index local 'button'". A client with CoA's own new races and the added ones can
+-- list more than 64, so the buttons grow with the list.
+-- One hidden button more than the races is made as well, for a loop of the client that goes one past them.
+local MADE = 0
+local function EnsureButtons(count)
+	for i = MADE + 1, count + 1 do
+		local button = _G["CharCreateRaceButton" .. i]
+		if not button then
+			button = CreateFrame("CheckButton", "CharCreateRaceButton" .. i, CharCreateRaceButtonsFrame, "CharCreateRaceButtonTemplate")
+			button:SetID(i)
+			button:Hide()
+		end
+		button.SetRace = SetRace
+		button:EnableMouseWheel(true)
+		button:SetScript("OnMouseWheel", OnRaceWheel)
 	end
-	button.SetRace = SetRace
-	button:EnableMouseWheel(true)
-	button:SetScript("OnMouseWheel", OnRaceWheel)
+	if count + 1 > MADE then
+		MADE = count + 1
+	end
+	BUTTONS = math.max(BUTTONS, count)
+	MAX_RACES = BUTTONS
 end
+EnsureButtons(BUTTONS)
 
 -- What the character creation shows for the class choice - its frame and the class buttons of the client in it -
 -- as one rectangle: what a race column must stay out of. Left and right in screen units, top upwards.
@@ -628,6 +640,7 @@ end
 local enumerate = CharacterCreateEnumerateRaces
 function CharacterCreateEnumerateRaces(...)
 	listed = {}
+	EnsureButtons(math.floor(select("#", ...) / 3))
 	for i = 1, select("#", ...), 3 do
 		local raceName, raceEnglishName = select(i, ...)
 		listed[#listed + 1] = Find(raceName, raceEnglishName) or false
@@ -839,6 +852,7 @@ end
 if SetCharacterRace then
 	local setRace = SetCharacterRace
 	function SetCharacterRace(...)
+		EnsureButtons(CharacterCreate and CharacterCreate.numRaces or 0)
 		local result = setRace(...)
 		Resize()
 		return result
