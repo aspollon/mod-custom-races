@@ -28,11 +28,18 @@ IMAGE_BASE = 0x10000000
 THREAD_START = 0x10041EF8
 THREAD_BEFORE = bytes.fromhex("6a0c6828160610")
 RESUME = 0x10041EFF
+# Base relocation of the stock "push 10061628h": the DLL is built for ASLR, and Windows would add the load
+# difference inside the jump that replaces the push.  The thunk works the address out itself.
+STALE_RELOC = 0x10041EFB
 THUNK_VA = 0x10054560
+# call $+5 / pop eax / sub eax,0x54565 (DLL base) / pushad / push 10000 / call [Sleep] / popad /
+# push 0Ch / lea ecx,[eax+61628h] / push ecx / jmp RESUME.  The pushad matters: without it the popad
+# takes 32 bytes off the stack that were never put there, and the client crashes before login.
 THUNK = bytes.fromhex(
-    "e800000000582d654505006810270000ff908850050061"
+    "e800000000582d65450500606810270000ff908850050061"
     "6a0c8d882816060051e979d9feff"
 )
+assert THUNK_VA + len(THUNK) + struct.unpack("<i", THUNK[-4:])[0] == RESUME
 
 
 def patch(source: Path, output: Path) -> dict:
@@ -75,6 +82,26 @@ def patch(source: Path, output: Path) -> dict:
     data[thunk_offset:thunk_offset + len(THUNK)] = THUNK
     relative = THUNK_VA - (THREAD_START + 5)
     data[site:site + 7] = b"\xE9" + struct.pack("<i", relative) + b"\x90\x90"
+
+    optional = nt + 24
+    reloc_rva, reloc_size = struct.unpack_from("<2I", data, optional + 96 + 5 * 8)
+    dropped = False
+    if reloc_rva and reloc_size:
+        start = file_offset(IMAGE_BASE + reloc_rva)
+        block, end = start, start + reloc_size
+        while block + 8 <= end and not dropped:
+            page, size = struct.unpack_from("<2I", data, block)
+            if size < 8:
+                break
+            for entry in range(block + 8, block + size, 2):
+                value = struct.unpack_from("<H", data, entry)[0]
+                if value >> 12 and IMAGE_BASE + page + (value & 0xFFF) == STALE_RELOC:
+                    data[entry:entry + 2] = b"\0\0"     # type 0: padding, skipped by the loader
+                    dropped = True
+                    break
+            block += size
+    if not dropped:
+        raise ValueError("the relocation of the replaced push was not found")
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(data)

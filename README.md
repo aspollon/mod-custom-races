@@ -172,7 +172,12 @@ hides it. `tools/esteria_start_delay.py` adds a ten-second wait to the worker st
 version-checked workaround. The proper source fix is to queue the worker until the renderer signals that the D3D9
 device is ready; the tool is only for the current 414,720-byte DLL and refuses another build.
 
-AFK Realm 1.0.64 and newer apply this delay automatically to a temporary copy of the same DLL; the client root
+The tool also removes the base relocation of the replaced `push` (RVA `0x41EFB`): the DLL is built for ASLR, and
+loaded at another address Windows would add the difference inside the new jump. The ten-second version of
+AFK Realm 1.0.64 to 1.0.66 had lost the `pushad` of its thunk and crashed the client before login itself.
+
+AFK Realm 1.0.67 and newer apply this delay automatically to a temporary copy of the same DLL (and repair a DLL that
+carries an earlier version); the client root
 still supplies the `dxvk.conf`, DXVK 2.7.1 `d3d9.dll` and the equipment-fitting files. If CoA Custom replaces the
 DLL with a build whose fingerprint differs, AFK Realm deliberately leaves it alone and the tool or an upstream fix
 is needed.
