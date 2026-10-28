@@ -370,6 +370,51 @@ namespace
             race.Name, (*count)[0].Get<uint64>());
     }
 
+    /// A race that got another number (AFK Realm gives an Esteria race the number its appearance DLL knows it by, or
+    /// the user moves it): its characters move along instead of being left at the old number, where FreeNumbers would
+    /// make them their base race for good. The number each race had is kept by its key (custom_races_number); the
+    /// characters go over a free range first (number + 128), so two races that swap numbers do not mix.
+    void Renumber()
+    {
+        CharacterDatabase.DirectExecute("CREATE TABLE IF NOT EXISTS `custom_races_number` (`race_key` VARCHAR(64) NOT NULL, "
+            "`race` TINYINT UNSIGNED NOT NULL, PRIMARY KEY (`race_key`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 "
+            "COMMENT='mod-custom-races: the number each race had, so its characters follow a new number'");
+        std::map<std::string, uint8> had;
+        if (QueryResult result = CharacterDatabase.Query("SELECT `race_key`, `race` FROM `custom_races_number`"))
+        {
+            do
+            {
+                Field* fields = result->Fetch();
+                had[fields[0].Get<std::string>()] = fields[1].Get<uint8>();
+            } while (result->NextRow());
+        }
+
+        std::vector<std::pair<uint8, uint8>> moves;
+        for (RaceDef const& race : races)
+        {
+            auto found = had.find(race.Key);
+            if (race.Id && found != had.end() && found->second && found->second != race.Id && found->second < 128 && race.Id < 128)
+                moves.emplace_back(found->second, race.Id);
+        }
+        for (auto const& move : moves)
+        {
+            CharacterDatabase.DirectExecute("UPDATE `characters` SET `race` = {} WHERE `race` = {}", move.first + 128, move.first);
+            CharacterDatabase.DirectExecute("UPDATE `custom_races_moved` SET `race` = {} WHERE `race` = {}", move.first + 128, move.first);
+        }
+        for (auto const& move : moves)
+        {
+            QueryResult count = CharacterDatabase.Query("SELECT COUNT(*) FROM `characters` WHERE `race` = {}", move.first + 128);
+            CharacterDatabase.DirectExecute("UPDATE `characters` SET `race` = {} WHERE `race` = {}", move.second, move.first + 128);
+            CharacterDatabase.DirectExecute("UPDATE `custom_races_moved` SET `race` = {} WHERE `race` = {}", move.second, move.first + 128);
+            CharacterDatabase.DirectExecute("DELETE FROM `custom_races_base` WHERE `race` = {}", move.first);
+            LOG_INFO("module", "mod-custom-races: race number {} is now {}; {} character(s) moved along", move.first, move.second,
+                count ? (*count)[0].Get<uint64>() : 0);
+        }
+        for (RaceDef const& race : races)
+            if (race.Id)
+                CharacterDatabase.DirectExecute("REPLACE INTO `custom_races_number` (`race_key`, `race`) VALUES ('{}', {})", race.Key, race.Id);
+    }
+
     /// A number no race has any more: a race was given up (CustomRaces.<race>.Id set to 0) or left the settings. Its
     /// characters stay the base race they had for good, and its rows go.
     void FreeNumbers()
@@ -735,6 +780,7 @@ public:
             "`EmotesTextId` INT NOT NULL DEFAULT '0', `RaceId` INT NOT NULL DEFAULT '0', `SexId` INT NOT NULL DEFAULT '0', "
             "`SoundId` INT NOT NULL DEFAULT '0', PRIMARY KEY (`Id`) USING BTREE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 "
             "COMMENT='mod-custom-races: the voices of its races, lent from their base races'");
+        Renumber();
         FreeNumbers();
         for (RaceDef const& race : races)
         {

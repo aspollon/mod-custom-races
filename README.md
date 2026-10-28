@@ -42,6 +42,10 @@ carry). Only a race with no base race to borrow from keeps its helmets hidden (`
 helmets an older version hid get them back once at their next login (bots always; a player who hides his helmet
 afterwards keeps it hidden).
 
+**A new number** for a race (AFK Realm gives an Esteria race the number CoA Custom's appearance DLL knows it by): its
+characters move along at the next start instead of staying behind as their base race (`custom_races_number` keeps
+the number each race had).
+
 **Races from other clients.** Other game clients and repacks bring races the CoA client does not have (Void Elf,
 Dark Iron Dwarf, Lightforged, Nightborne and more). Gathered into a race folder - one folder per race, with its rows in
 `race.json` and its models and textures in `files\` - AFK Realm offers them on the setup page next to the races of
