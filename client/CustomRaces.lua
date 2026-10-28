@@ -50,6 +50,9 @@ local MALE_ONLY = {
 	IceTroll = true, Skeleton = true, NorthrendSkeleton = true, Troglodyte = true, ThinHuman = true,
 	Gnoll = true, Saberon = true,
 }
+-- The other way round: races with women only (CoA Custom's Banshee, Harpy and Alpha Goblin, whose man has no head),
+-- by their key or file name, letters only. AFK Realm writes femaleOnly for them as well.
+local FEMALE_ONLY = { BANSHEE = true, BANSHEEHORDE = true, HARPY = true, GOBLINA = true, ALPHAGOBLIN = true }
 
 if not CharCreateRaceButtonsFrame or not CharCreateRaceButtonMixin or not CharacterCreateEnumerateRaces then
 	return
@@ -73,7 +76,8 @@ local BY_NAME, BY_FILE = {}, {}
 for _, race in ipairs(RACES) do
 	local known = KNOWN[race.key] or {}
 	race.portrait = known.portrait
-	race.maleOnly = race.maleOnly or MALE_ONLY[race.key] or false
+	race.femaleOnly = race.femaleOnly or FEMALE_ONLY[Plain(race.key)] or FEMALE_ONLY[Plain(race.file)] or false
+	race.maleOnly = not race.femaleOnly and (race.maleOnly or MALE_ONLY[race.key]) or false
 	race.base = BASE_FILES[race.base] and race.base or "Human"
 	race.baseFile = BASE_FILES[race.base]
 	BY_NAME[Plain(race.name)] = race
@@ -696,37 +700,50 @@ watch:SetScript("OnUpdate", function(self, elapsed)
 end)
 Watch = watch
 
--- Races without a female model are male only.
-local function MaleOnly()
-	local race = listed[GetSelectedRace and GetSelectedRace() or 0]
-	return race and race.maleOnly
+-- Races without a female model are male only, races without a male model female only: the one sex they have.
+local function OnlySex(race)
+	if race and race.maleOnly then
+		return SEX_MALE
+	elseif race and race.femaleOnly then
+		return SEX_FEMALE
+	end
 end
 
 if SetCharacterGender and SetCharacterRace and CharCreateFemaleButton then
 	local setGender = SetCharacterGender
 	function SetCharacterGender(sex)
-		if sex == SEX_FEMALE and MaleOnly() then
-			sex = SEX_MALE
+		local only = OnlySex(listed[GetSelectedRace and GetSelectedRace() or 0])
+		if only then
+			sex = only
 		end
 		return setGender(sex)
 	end
 
 	-- The game builds the model of the chosen race and sex at once: a woman of a race without a female body crashes
-	-- it. A click on such a race switches to male first, while the race shown before is still the chosen one.
+	-- it (and a man of a race without a male body). A click on such a race switches to its sex first, while the race
+	-- shown before is still the chosen one.
 	local setCharacterRace = SetCharacterRace
 	function SetCharacterRace(id)
-		local race = listed[id]
-		if race and race.maleOnly and GetSelectedSex() == SEX_FEMALE then
-			setGender(SEX_MALE)
+		local only = OnlySex(listed[id])
+		if only and GetSelectedSex() ~= only then
+			setGender(only)
 		end
 		local result = setCharacterRace(id)
-		if MaleOnly() then
+		only = OnlySex(listed[GetSelectedRace and GetSelectedRace() or 0])
+		if only == SEX_MALE then
 			CharCreateFemaleButton:Disable()
-			if GetSelectedSex() == SEX_FEMALE then
-				SetCharacterGender(SEX_MALE)
-			end
 		else
 			CharCreateFemaleButton:Enable()
+		end
+		if CharCreateMaleButton then
+			if only == SEX_FEMALE then
+				CharCreateMaleButton:Disable()
+			else
+				CharCreateMaleButton:Enable()
+			end
+		end
+		if only and GetSelectedSex() ~= only then
+			SetCharacterGender(only)
 		end
 		return result
 	end

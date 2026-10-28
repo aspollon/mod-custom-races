@@ -33,7 +33,7 @@
         "key": "CustomRaces.Races",
         "default": ""
        },
-       "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\", icon = \"{conf:CustomRaces.{each}.Icon}\", racials = \"{conf:CustomRaces.{each}.Racials}\", id = \"{conf:CustomRaces.{each}.Id}\", height = { \"{height:{conf:CustomRaces.{each}.Id}:0}\", \"{height:{conf:CustomRaces.{each}.Id}:1}\" } } -- @RACES@"
+       "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\", femaleOnly = \"{conf:CustomRaces.{each}.FemaleOnly}\" == \"1\", icon = \"{conf:CustomRaces.{each}.Icon}\", racials = \"{conf:CustomRaces.{each}.Racials}\", id = \"{conf:CustomRaces.{each}.Id}\", height = { \"{height:{conf:CustomRaces.{each}.Id}:0}\", \"{height:{conf:CustomRaces.{each}.Id}:1}\" } } -- @RACES@"
       }
      ]
     },
@@ -3236,6 +3236,11 @@
       },
       "maleOnly": {
        "setting": "CustomRaces.{each}.MaleOnly",
+       "conf": "mod_custom_races.conf",
+       "default": 0
+      },
+      "femaleOnly": {
+       "setting": "CustomRaces.{each}.FemaleOnly",
        "conf": "mod_custom_races.conf",
        "default": 0
       }

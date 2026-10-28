@@ -42,6 +42,7 @@
 #include "SpellScript.h"
 #include "StringConvert.h"
 #include "Tokenize.h"
+#include "WorldSession.h"
 
 #include <algorithm>
 #include <cctype>
@@ -100,6 +101,7 @@ namespace
         uint32 MaleDisplay = 0, FemaleDisplay = 0;
         uint8 Base = 1;
         bool MaleOnly = false;
+        bool FemaleOnly = false;                         // CustomRaces.<race>.FemaleOnly: no man of its own (Banshee)
         bool OwnHelmets = true;                          // the client has helmet models for it
         uint8 Appearance = 0;                            // CustomRaces.<race>.Appearance: looks beyond the five bytes
         std::vector<uint32> RacialSpells;                // CustomRaces.<race>.Racials: what its characters learn
@@ -216,7 +218,8 @@ namespace
             race.File = Text(race.Key, "File", race.Key);
             race.MaleDisplay = Number(race.Key, "MaleDisplay");
             race.FemaleDisplay = Number(race.Key, "FemaleDisplay");
-            race.MaleOnly = Number(race.Key, "MaleOnly") != 0;
+            race.FemaleOnly = Number(race.Key, "FemaleOnly") != 0;
+            race.MaleOnly = !race.FemaleOnly && Number(race.Key, "MaleOnly") != 0;
             race.OwnHelmets = Number(race.Key, "OwnHelmets", 1) != 0;
             race.RacialSpells = SpellIds(Text(race.Key, "Racials"));
             race.Appearance = uint8(std::min<uint32>(Number(race.Key, "Appearance"), 2));
@@ -795,34 +798,111 @@ namespace
     /// A race without helmet models of its own would show a placeholder for every helmet: its characters keep their
     /// helmets hidden - set when they are made and at every login, which covers the random bots of mod-playerbots.
     /// A player may show the helmet again for the session (Interface options).
-    void HideHelmet(Player* player)
+    /// A race that has helmets (its own, or those of its base race through CustomRaces.<race>.HelmetPrefix) shows them.
+    /// Earlier versions hid the helmets of such races too, and the game keeps that choice with the character for good:
+    /// those characters walked without helmets ever after. The old mark is taken away once per character
+    /// (custom_races_helmet), so a player who hides the helmet himself afterwards keeps it hidden; a bot never chooses
+    /// it, so a bot always shows it.
+    void HideHelmet(Player* player, bool login)
     {
         RaceDef const* race = ActiveRace(player);
-        if (race && !race->OwnHelmets)
+        if (!race)
+            return;
+        if (!race->OwnHelmets)
+        {
             player->SetPlayerFlag(PLAYER_FLAGS_HIDE_HELM);
+            return;
+        }
+        if (!login || !player->HasPlayerFlag(PLAYER_FLAGS_HIDE_HELM))
+            return;
+
+        WorldSession* session = player->GetSession();
+        bool bot = session && session->IsBot();
+        ObjectGuid::LowType guid = player->GetGUID().GetCounter();
+        if (!bot && CharacterDatabase.Query("SELECT 1 FROM custom_races_helmet WHERE guid = {}", guid))
+            return;
+        player->RemovePlayerFlag(PLAYER_FLAGS_HIDE_HELM);
+        if (!bot)
+            CharacterDatabase.Execute("REPLACE INTO custom_races_helmet (guid) VALUES ({})", guid);
+    }
+
+    /// Bots made before their race had sections (or by a playerbots version that knew nothing of the race) carry every
+    /// appearance byte 0. When the race has no section for that look, the game draws them as untextured white models.
+    /// This holds for every race of the module, not only the male-only ones it was first seen on (Gnoll): such a
+    /// character gets the first valid look of its race and sex. A look of zeros the race does have stays, and so does
+    /// every other look - the Esteria races keep packed values the sections do not list (a repair by the sections reset
+    /// them), so only the case of nothing at all is touched.
+    bool RepairBlankLook(Player* player, RaceDef const* race)
+    {
+        if (player->GetByteValue(PLAYER_BYTES, 0) != 0 || player->GetByteValue(PLAYER_BYTES, 1) != 0 ||
+            player->GetByteValue(PLAYER_BYTES, 2) != 0 || player->GetByteValue(PLAYER_BYTES, 3) != 0 ||
+            player->GetByteValue(PLAYER_BYTES_2, 0) != 0)
+            return false;
+
+        uint8 gender = player->getGender();
+        bool any = false, zeroSkin = false, zeroFace = false;
+        for (CharSectionsEntry const* section : sCharSectionsStore)
+        {
+            if (section->Race != race->Id || section->Gender != gender)
+                continue;
+            any = true;
+            if (section->GenType == SECTION_TYPE_SKIN && section->Color == 0)
+                zeroSkin = true;
+            if (section->GenType == SECTION_TYPE_FACE && section->Type == 0 && section->Color == 0)
+                zeroFace = true;
+        }
+        if (!any || (zeroSkin && zeroFace))
+            return false;
+
+        for (CharSectionsEntry const* section : sCharSectionsStore)
+        {
+            if (section->Race != race->Id || section->Gender != gender)
+                continue;
+            switch (section->GenType)
+            {
+                case SECTION_TYPE_SKIN: player->SetByteValue(PLAYER_BYTES, 0, section->Color); break;
+                case SECTION_TYPE_FACE: player->SetByteValue(PLAYER_BYTES, 1, section->Type); break;
+                case SECTION_TYPE_HAIR: player->SetByteValue(PLAYER_BYTES, 2, section->Type); player->SetByteValue(PLAYER_BYTES, 3, section->Color); break;
+                case SECTION_TYPE_FACIAL_HAIR: player->SetByteValue(PLAYER_BYTES_2, 0, section->Type); break;
+                default: break;
+            }
+        }
+        return true;
     }
 
     /// A race without a female model is male: an old female character of it (made before the flag, or a bot
-    /// created by an older playerbots version) becomes a man again at login.
-    void MakeMale(Player* player)
+    /// created by an older playerbots version) becomes a man again at login; a race without a male model is female in
+    /// the same way. A blank look of any race of the module is
+    /// repaired as well (RepairBlankLook). Returns whether the character changed.
+    bool MakeMale(Player* player)
     {
         RaceDef const* race = player ? ActiveRace(player) : nullptr;
-        if (!race || !race->MaleOnly)
-            return;
+        if (!race)
+            return false;
 
-        if (player->getGender() == GENDER_FEMALE)
+        bool changed = false;
+        if (race->MaleOnly && player->getGender() == GENDER_FEMALE)
         {
             player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_MALE);
             player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_MALE);   // race, class, gender, power
             player->SetUInt32Value(PLAYER_BYTES, 0);             // skin, face, hair style and colour of a man
             player->SetByteValue(PLAYER_BYTES_2, 0, 0);          // no beard
+            changed = true;
+        }
+        // The same the other way round for a race with women only (CoA Custom's Banshee, Harpy, Alpha Goblin, whose
+        // man has no head): a man of it - a random bot above all - becomes a woman with a look of her race.
+        if (race->FemaleOnly && player->getGender() == GENDER_MALE)
+        {
+            player->SetByteValue(PLAYER_BYTES_3, 0, GENDER_FEMALE);
+            player->SetByteValue(UNIT_FIELD_BYTES_0, 2, GENDER_FEMALE);
+            player->SetUInt32Value(PLAYER_BYTES, 0);
+            player->SetByteValue(PLAYER_BYTES_2, 0, 0);
+            changed = true;
         }
 
-        // Bots made before the race had sections have every appearance byte 0. They are drawn as untextured
-        // white models; take the first valid male section of the race instead.
-        if (player->GetByteValue(PLAYER_BYTES, 0) == 0 && player->GetByteValue(PLAYER_BYTES, 1) == 0 &&
-            player->GetByteValue(PLAYER_BYTES, 2) == 0 && player->GetByteValue(PLAYER_BYTES, 3) == 0 &&
-            player->GetByteValue(PLAYER_BYTES_2, 0) == 0)
+        // the male-only races were repaired whenever their look was blank, as before; the others only when the
+        // blank look is none of their race
+        if (race->MaleOnly && player->GetUInt32Value(PLAYER_BYTES) == 0 && player->GetByteValue(PLAYER_BYTES_2, 0) == 0)
         {
             for (CharSectionsEntry const* section : sCharSectionsStore)
             {
@@ -837,9 +917,14 @@ namespace
                     default: break;
                 }
             }
+            changed = player->GetUInt32Value(PLAYER_BYTES) != 0 || changed;
         }
+        else if (RepairBlankLook(player, race))
+            changed = true;
 
-        player->InitDisplayIds();
+        if (changed || race->MaleOnly || race->FemaleOnly)
+            player->InitDisplayIds();
+        return changed;
     }
 
     /// The racials a character knows: the ones of the race it plays, learned at every login; the ones of every other
@@ -875,7 +960,7 @@ public:
     {
         if (!player)
             return true;
-        HideHelmet(player);
+        HideHelmet(player, false);
         MakeMale(player);
         return true;
     }
@@ -885,7 +970,7 @@ public:
         if (!player)
             return;
 
-        HideHelmet(player);
+        HideHelmet(player, true);
         uint8 oldGender = player->getGender();
         MakeMale(player);
         if (oldGender != player->getGender())

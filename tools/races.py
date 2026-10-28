@@ -4,7 +4,7 @@ mod-custom-races: what the module knows about races beyond the game client.
 
 The races themselves come from the game client: AFK Realm reads its race table, finds the races with a player model
 and writes what the server needs of each into mod_custom_races.conf (CustomRaces.<race>.Source, .Id, .Name, .Prefix,
-.File, .MaleDisplay, .FemaleDisplay, .MaleOnly, .Base, .Copy). This table only adds what the client does not say: a
+.File, .MaleDisplay, .FemaleDisplay, .MaleOnly, .FemaleOnly, .Base, .Copy). This table only adds what the client does not say: a
 better portrait, the base race that fits, a rating - and races made from another (the High Elf, from the Blood
 Elf). A race of the client that is not in it is offered all the same.
 
@@ -192,13 +192,15 @@ def client_edits():
             spec['newId'] = True
         each({'file': 'DBFilesClient\\%s.dbc' % table, 'copyRows': spec}, cond('Copy', **{'is': '1'}))
     # The rules of the character creation for the rows of every added race (AFK Realm, RaceImport.SectionRules): last.
-    each({'file': 'DBFilesClient\\CharSections.dbc', 'sectionRules': {'race': race_id, 'maleOnly': setting('MaleOnly')}})
+    each({'file': 'DBFilesClient\\CharSections.dbc', 'sectionRules': {'race': race_id, 'maleOnly': setting('MaleOnly'),
+                                                                      'femaleOnly': setting('FemaleOnly')}})
     return edits
 
 
 def client_fills():
     line = ('RACES[#RACES + 1] = { key = "{each}", name = "{conf:CustomRaces.{each}.Name}", file = "{conf:CustomRaces.{each}.File}", '
             'base = "{conf:CustomRaces.{each}.Base}", maleOnly = "{conf:CustomRaces.{each}.MaleOnly}" == "1", '
+            'femaleOnly = "{conf:CustomRaces.{each}.FemaleOnly}" == "1", '
             'icon = "{conf:CustomRaces.{each}.Icon}", racials = "{conf:CustomRaces.{each}.Racials}", '
             'id = "{conf:CustomRaces.{each}.Id}", height = { "{height:{conf:CustomRaces.{each}.Id}:0}", '
             '"{height:{conf:CustomRaces.{each}.Id}:1}" } } -- @RACES@')

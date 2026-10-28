@@ -34,10 +34,13 @@ many of them can be on at once. A race switched off keeps its number, so its cha
 up the number (setting it to 0) frees it for another race, and the characters of the race stay their base race for
 good.
 
-**Helmets** are models made for each race. Most races of the client have none of their own and show a placeholder
-for every helmet, so their characters - players and bots - keep their helmets hidden (set when they are made and at
-every login; `CustomRaces.<race>.OwnHelmets`, which the setup page sets from what the client carries). The showcase of
-the character creation still shows it.
+**Helmets** are models made for each race (`Helm_X_<prefix><M|F>.m2`); a race without the model of a helmet shows
+the blue and white placeholder cube instead. A race that has (nearly) all of them keeps its own; one with none or only
+some (helmets for a few items, as Esteria's or Eunoia's races bring them) wears the helmets of its base race, as CoA
+Custom does it (`CustomRaces.<race>.HelmetPrefix`, which the setup page sets from what the client and the race pack
+carry). Only a race with no base race to borrow from keeps its helmets hidden (`OwnHelmets = 0`). Characters whose
+helmets an older version hid get them back once at their next login (bots always; a player who hides his helmet
+afterwards keeps it hidden).
 
 **Races from other clients.** Other game clients and repacks bring races the CoA client does not have (Void Elf,
 Dark Iron Dwarf, Lightforged, Nightborne and more). Gathered into a race folder - one folder per race, with its rows in
@@ -149,7 +152,7 @@ and their side from the core's race table.
 | `CustomRaces.<race>.Id` | its own | Its race number: its own below 32, otherwise one of the free numbers. |
 | `CustomRaces.HighRaces` | 0 | For the game of CoA Custom (its `Ascension-b.exe`): race numbers up to 127, and its races keep the numbers CoA Custom gave them, which its `EsteriaAppearance.dll` knows them by. |
 | `CustomRaces.<race>.Appearance` | 0 | The looks it keeps beyond the five bytes of the game: 1 a sixth byte (Highmountain Tauren, Earthen), 2 a 64-bit number (Haranir). Stored in `characters.extraAppearance` (added by `data/sql/db-characters`), sent with the character list (marks HXE1/HXE2) and to the players nearby, as CoA Custom's server does. |
-| `CustomRaces.<race>.Source`, `.Copy`, `.Name`, `.Prefix`, `.File`, `.MaleDisplay`, `.FemaleDisplay`, `.MaleOnly` | from the client | Its row in the client's ChrRaces.dbc and what it holds; written by the setup page. |
+| `CustomRaces.<race>.Source`, `.Copy`, `.Name`, `.Prefix`, `.File`, `.MaleDisplay`, `.FemaleDisplay`, `.MaleOnly`, `.FemaleOnly` | from the client | Its row in the client's ChrRaces.dbc and what it holds; written by the setup page. |
 
 ### The sixth value in the customize screen
 
