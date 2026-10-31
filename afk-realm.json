@@ -35,6 +35,16 @@
        },
        "line": "RACES[#RACES + 1] = { key = \"{each}\", name = \"{conf:CustomRaces.{each}.Name}\", file = \"{conf:CustomRaces.{each}.File}\", base = \"{conf:CustomRaces.{each}.Base}\", maleOnly = \"{conf:CustomRaces.{each}.MaleOnly}\" == \"1\", femaleOnly = \"{conf:CustomRaces.{each}.FemaleOnly}\" == \"1\", icon = \"{conf:CustomRaces.{each}.Icon}\", racials = \"{conf:CustomRaces.{each}.Racials}\", id = \"{conf:CustomRaces.{each}.Id}\", height = { \"{height:{conf:CustomRaces.{each}.Id}:0}\", \"{height:{conf:CustomRaces.{each}.Id}:1}\" } } -- @RACES@"
       }
+     ],
+     "when": [
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.UseCoAUI",
+       "default": "0",
+       "notIn": [
+        "1"
+       ]
+      }
      ]
     },
     {
@@ -84,7 +94,17 @@
     {
      "file": "Interface\\GlueXML\\GlueXML.toc",
      "insertAfter": "CharacterCreate.xml",
-     "line": "CustomRaces.lua"
+     "line": "CustomRaces.lua",
+     "when": [
+      {
+       "conf": "mod_custom_races.conf",
+       "key": "CustomRaces.UseCoAUI",
+       "default": "0",
+       "notIn": [
+        "1"
+       ]
+      }
+     ]
     },
     {
      "file": "DBFilesClient\\ChrRaces.dbc",
