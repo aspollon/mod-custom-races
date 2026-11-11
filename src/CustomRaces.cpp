@@ -23,6 +23,8 @@
 
 #include "AscensionRacialAbilities.h"
 #include "Cell.h"
+#include "Chat.h"
+#include "ChatCommand.h"
 #include "CellImpl.h"
 #include "Config.h"
 #include "DBCStores.h"
@@ -808,6 +810,85 @@ namespace
     }
 }
 
+namespace
+{
+    /// One line per race that is on: its race row, start data per class, racials and the reputation of the capitals,
+    /// each compared with what the server has. Problems first. Logged at the start and shown by .customraces check.
+    std::vector<std::string> CheckRaces()
+    {
+        // capitals and the two sides, where a wrong race mask shows (swapped reputations)
+        static uint32 const factions[] = { 72, 47, 69, 54, 930, 469, 76, 68, 81, 530, 911, 67 };
+        std::vector<std::string> problems, fine;
+        for (RaceDef const* race : active)
+        {
+            std::vector<std::string> issues;
+            if (!sChrRacesStore.LookupEntry(race->Id))
+                issues.push_back("no row in ChrRaces.dbc");
+            uint32 classes = 0;
+            for (uint8 cls = 1; cls < MAX_CLASSES; ++cls)
+                if (sObjectMgr->GetPlayerInfo(race->Id, cls))
+                    ++classes;
+            if (!classes)
+                issues.push_back("no start data for any class (playercreateinfo)");
+            std::string missing;
+            for (uint32 spell : race->RacialSpells)
+                if (!sSpellMgr->GetSpellInfo(spell))
+                    missing += (missing.empty() ? "" : " ") + std::to_string(spell);
+            if (!missing.empty())
+                issues.push_back("racial spell(s) unknown to the server: " + missing);
+            std::string rep;
+            for (uint32 id : factions)
+                if (FactionEntry const* faction = sFactionStore.LookupEntry(id))
+                    if (sObjectMgr->GetBaseReputationOf(faction, race->Id, CLASS_WARRIOR) !=
+                        sObjectMgr->GetBaseReputationOf(faction, race->Base, CLASS_WARRIOR))
+                        rep += (rep.empty() ? "" : ", ") + std::string(faction->name[0]);
+            if (!rep.empty())
+                issues.push_back("reputation differs from its base race at: " + rep);
+            std::string label = race->Name + " (" + std::to_string(race->Id) + ")";
+            if (issues.empty())
+                fine.push_back("OK  " + label + ": " + std::to_string(classes) + " class(es), " + std::to_string(race->RacialSpells.size()) + " racial(s)");
+            else
+            {
+                std::string line = "!!  " + label + ":";
+                for (std::string const& issue : issues)
+                    line += " " + issue + ";";
+                problems.push_back(line);
+            }
+        }
+        std::vector<std::string> lines { "mod-custom-races check: " + std::to_string(fine.size()) + " race(s) fine, " + std::to_string(problems.size()) + " with a problem" };
+        lines.insert(lines.end(), problems.begin(), problems.end());
+        lines.insert(lines.end(), fine.begin(), fine.end());
+        return lines;
+    }
+}
+
+class CustomRacesCommands : public CommandScript
+{
+public:
+    CustomRacesCommands() : CommandScript("CustomRacesCommands") { }
+
+    Acore::ChatCommands::ChatCommandTable GetCommands() const override
+    {
+        using namespace Acore::ChatCommands;
+        static ChatCommandTable sub =
+        {
+            { "check", HandleCheck, SEC_GAMEMASTER, Console::Yes },
+        };
+        static ChatCommandTable root =
+        {
+            { "customraces", sub },
+        };
+        return root;
+    }
+
+    static bool HandleCheck(ChatHandler* handler)
+    {
+        for (std::string const& line : CheckRaces())
+            handler->SendSysMessage(line);
+        return true;
+    }
+};
+
 class CustomRacesWorld : public WorldScript
 {
 public:
@@ -896,6 +977,8 @@ public:
             SetExtraAppearanceKind(race->Id, race->Appearance);
             LendMasks(*race);
         }
+        for (std::string const& line : CheckRaces())
+            LOG_INFO("module", "{}", line);
     }
 };
 
@@ -1146,4 +1229,5 @@ void AddSC_custom_races()
     new CustomRacesWorld();
     new CustomRacesPlayer();
     new CustomRacesUnit();
+    new CustomRacesCommands();
 }
