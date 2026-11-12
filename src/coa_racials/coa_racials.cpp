@@ -16,6 +16,7 @@ void AddSC_drakkin_racials();
 void AddSC_drakonid_racials();
 void AddSC_darkfallen_racials();
 void AddSC_broken_racials();
+void AddSC_allraces_racials();
 
 void AddSC_coa_custom_racials()
 {
@@ -24,4 +25,5 @@ void AddSC_coa_custom_racials()
     AddSC_drakonid_racials();
     AddSC_darkfallen_racials();
     AddSC_broken_racials();
+    AddSC_allraces_racials();
 }

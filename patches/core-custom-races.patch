@@ -14,10 +14,10 @@ index 00000000..b38094d2
 +EXECUTE stmt;
 +DEALLOCATE PREPARE stmt;
 diff --git a/src/server/coa/AscensionCompat.cpp b/src/server/coa/AscensionCompat.cpp
-index 0708ca0b..dccef8e1 100644
+index f9d890167..0ac3dc38f 100644
 --- a/src/server/coa/AscensionCompat.cpp
 +++ b/src/server/coa/AscensionCompat.cpp
-@@ -727,7 +727,7 @@ std::vector<uint32> GetAscensionRacialSpells(Player const* player)
+@@ -801,7 +801,7 @@ std::vector<uint32> GetAscensionRacialSpells(Player const* player)
  {
      std::vector<uint32> spells;
      for (auto const& skill : AscensionRacialAbilities::Skills)
@@ -26,6 +26,15 @@ index 0708ca0b..dccef8e1 100644
              for (SkillLineAbilityEntry const* ability : GetSkillLineAbilitiesBySkillLine(skill.SkillId))
                  if (AscensionRacialAbilities::CanLearn(*ability, player->getRace(), player->getClass()))
                      spells.push_back(ability->Spell);
+@@ -824,7 +824,7 @@ bool IsForeignRacialSpell(Player const* player, uint32 spellId)
+         if (!race)
+             return false;
+         racial = true;
+-        if (race == player->getRace() &&
++        if (race == AscensionRacialAbilities::RacialRace(player->getRace()) &&
+             AscensionRacialAbilities::CanLearn(*itr->second, player->getRace(), player->getClass()))
+             return false;
+     }
 diff --git a/src/server/coa/AscensionFreshCharacterCheck.cpp b/src/server/coa/AscensionFreshCharacterCheck.cpp
 index e1bf8130..7cbfb8bf 100644
 --- a/src/server/coa/AscensionFreshCharacterCheck.cpp
