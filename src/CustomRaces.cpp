@@ -204,6 +204,16 @@ namespace
     {
         races.clear();
         std::set<uint8> taken;
+        // The races on (CustomRaces.Races) get their numbers first: an old section left in the file that is not on
+        // (an earlier copy) must not take the number of a race that is.
+        std::set<std::string> listed;
+        {
+            std::string list = sConfigMgr->GetOption<std::string>("CustomRaces.Races", "");
+            std::replace(list.begin(), list.end(), ',', ' ');
+            for (std::string_view token : Acore::Tokenize(list, ' ', false))
+                listed.insert(Lower(std::string(token)));
+        }
+        std::vector<std::pair<RaceDef, uint32>> read;
         std::string const suffix = ".Source";
         std::string const prefix = PREFIX;
         for (std::string const& option : sConfigMgr->GetKeysByString(prefix))
@@ -227,7 +237,11 @@ namespace
             race.Appearance = uint8(std::min<uint32>(Number(race.Key, "Appearance"), 2));
             race.Base = ParseBase(race);
 
-            uint32 const id = Number(race.Key, "Id", race.Source < 32 ? race.Source : 0);
+            read.emplace_back(race, Number(race.Key, "Id", race.Source < 32 ? race.Source : 0));
+        }
+        std::stable_partition(read.begin(), read.end(), [&](auto const& r) { return listed.count(Lower(r.first.Key)) != 0; });
+        for (auto& [race, id] : read)
+        {
             if (id && !Usable(id))
                 LOG_ERROR("module", "mod-custom-races: CustomRaces.{}.Id is {}, which no new race can have (1 to {}, not a stock race); "
                     "the {} stays off", race.Key, id, MaxRace(), race.Name);
