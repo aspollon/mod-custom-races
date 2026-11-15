@@ -12,6 +12,7 @@
 #include "MapMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "Transport.h"
 
 class FadingIslandGraveyard : public PlayerScript
 {
@@ -49,7 +50,32 @@ public:
     }
 };
 
+// The Hardluck ferries (gameobject 9900101/9900102 and the island elevators, 99001xx). A player who walked off the deck
+// can stay a passenger on the server; when the ship leaves he is pulled after it, or across to the other map. CoA Custom
+// fixes that in its own worldserver ("ferry detach"). Here: a passenger more than 40 yards from the ship's centre left it.
+class FadingIslandFerryDetach : public PlayerScript
+{
+public:
+    FadingIslandFerryDetach() : PlayerScript("FadingIslandFerryDetach", { PLAYERHOOK_ON_UPDATE }) { }
+
+    void OnPlayerUpdate(Player* player, uint32 /*diff*/) override
+    {
+        Transport* transport = player->GetTransport();
+        if (!transport || transport->GetEntry() < 9900100 || transport->GetEntry() > 9900199 || player->IsBeingTeleported())
+            return;
+        float const offset = player->m_movementInfo.transport.pos.GetExactDist2d(0.0f, 0.0f);
+        float const fromShip = player->GetExactDist2d(transport);
+        if (offset < 40.0f && fromShip < 40.0f)
+            return;
+        transport->RemovePassenger(player);
+        player->SetTransport(nullptr);
+        player->m_movementInfo.transport.Reset();
+        player->RemoveUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT);
+    }
+};
+
 void AddSC_fading_island()
 {
     new FadingIslandGraveyard();
+    new FadingIslandFerryDetach();
 }
