@@ -19,12 +19,6 @@
    "target": "core",
    "file": "patches/core-race-forms.patch",
    "why": "CoA Custom's x64 client keeps the second form of a Worgen or Dracthyr (Human, Visage), its full Retail customization and the body sliders apart from the five stock bytes. Its own worldserver saved them; a server built from the CoA core did not, so the human form was lost after every login. The patch adds the three tables, the client's form-look message and its answers, sends the looks with the character list and to everyone in view, and makes Visage and Two Forms switch between the saved forms."
-  },
-  {
-   "name": "Racial spells survive the spell stream",
-   "target": "core",
-   "file": "patches/core-racial-sync.patch",
-   "why": "The client's spell-patch stream sends a learned message for the spell rows it streams, which made mounts and racials appear twice. The patch remembers which spells this login actually streamed and then sends client-only remove/learn packets for the race's spells from custom_races_racials, with the CoA client's keepActionButtons flag: every custom race gets its racials once, the action bars keep their buttons, and the client's own spell rows stay untouched."
   }
  ],
  "client": {
