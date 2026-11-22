@@ -200,6 +200,27 @@ class spell_gilgoblin_brineborn_cascade : public SpellScript
     }
 };
 
+// Snagtooth (race 94, CoA Custom V2.0.3), Snaggletooth Roar (15000942): the 5 nearest enemies within 8 yards flee.
+// CoA Custom binds a script to it; its spell row already limits the targets, this keeps the nearest instead of any 5.
+class spell_snagtooth_roar : public SpellScript
+{
+    PrepareSpellScript(spell_snagtooth_roar);
+
+    void KeepNearest(std::list<WorldObject*>& targets)
+    {
+        Unit* caster = GetCaster();
+        if (!caster || targets.size() <= 5)
+            return;
+        targets.sort([caster](WorldObject* a, WorldObject* b) { return caster->GetExactDist2dSq(a) < caster->GetExactDist2dSq(b); });
+        targets.resize(5);
+    }
+
+    void Register() override
+    {
+        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_snagtooth_roar::KeepNearest, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
+    }
+};
+
 void AddSC_allraces_racials()
 {
     RegisterSpellScript(spell_titan_aegis);
@@ -207,4 +228,5 @@ void AddSC_allraces_racials()
     RegisterSpellScript(spell_gilgoblin_current_rider);
     RegisterSpellScript(spell_gilgoblin_brine_mending);
     RegisterSpellScript(spell_gilgoblin_brineborn_cascade);
+    RegisterSpellScript(spell_snagtooth_roar);
 }
